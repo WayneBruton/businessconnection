@@ -1,12 +1,12 @@
 import os
-from flask import Flask, render_template, redirect, url_for, flash, request, session
+from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from functools import wraps
 from dotenv import load_dotenv
 from forms import LoginForm, RegistrationForm, ReferralForm
 from database import (
     create_user, get_user_by_email, verify_password, 
     generate_jwt_token, decode_jwt_token, get_user_by_id,
-    create_referral, get_referrals_by_user
+    create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id
 )
 from datetime import datetime
 
@@ -131,10 +131,22 @@ def register():
         first_name = form.first_name.data
         last_name = form.last_name.data
         business_name = form.business_name.data
+        mobile_number = form.mobile_number.data
+        office_number = form.office_number.data
         enabled = form.enabled.data
         notify = form.notify.data
         
-        user_id = create_user(email, password, first_name, last_name, business_name, enabled, notify)
+        user_id = create_user(
+            email=email, 
+            password=password, 
+            first_name=first_name, 
+            last_name=last_name, 
+            business_name=business_name, 
+            enabled=enabled, 
+            notify=notify,
+            mobile_number=mobile_number,
+            office_number=office_number
+        )
         
         if user_id:
             flash('Registration successful! Please login.', 'success')
@@ -147,7 +159,8 @@ def register():
 @app.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    # Get user from database
+    """Dashboard page."""
+    # Get user information
     user_id = session.get('user_id')
     user = get_user_by_id(user_id)
     
@@ -155,37 +168,84 @@ def dashboard():
         # If user not found, log them out
         return redirect(url_for('logout'))
     
-    # Initialize referral form
+    print(f"Request method: {request.method}")
+    
+    # Create forms
     referral_form = ReferralForm()
     
-    # Handle referral form submission
-    if request.method == 'POST' and referral_form.validate_on_submit():
-        to_business = referral_form.to_business.data
-        to_name = referral_form.to_name.data
-        contact_info = referral_form.contact_info.data
-        details = referral_form.details.data
-        
-        # Create referral
-        referral_id = create_referral(
-            from_user_id=user_id,
-            from_business=user['business_name'],
-            to_business=to_business,
-            to_name=to_name,
-            contact_info=contact_info,
-            details=details
-        )
-        
-        if referral_id:
-            flash('Referral submitted successfully!', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Failed to submit referral. Please try again.', 'error')
+    # Get all enabled users for the dropdown
+    all_users = get_all_enabled_users()
+    # Filter out the current user and prepare choices
+    business_choices = [(str(u['_id']), f"{u['business_name']} ({u['first_name']} {u['last_name']})") for u in all_users if str(u['_id']) != user_id]
+    # Sort choices alphabetically by business name
+    business_choices.sort(key=lambda x: x[1])
+    
+    # Set the choices for the dropdown
+    referral_form.to_business.choices = business_choices
+    
+    # Pre-populate the from_business field
+    referral_form.from_business.data = user['business_name']
+    
+    # Pre-populate the referral_date field with today's date
+    from datetime import date
+    referral_form.referral_date.data = date.today()
     
     # Get user's referrals
     referrals = get_referrals_by_user(user_id)
     
     # Get current date and time for the form
     now = datetime.now()
+    
+    print(f"Form submitted: {request.method == 'POST'}")
+    print(f"Form valid: {referral_form.validate_on_submit()}")
+    
+    if request.method == 'POST':
+        print(f"Form errors: {referral_form.errors}")
+        print(f"Form data: {request.form}")
+    
+    if referral_form.validate_on_submit():
+        print("Form validated successfully")
+        # Get the to_business name from the selected ID
+        to_business_id = referral_form.to_business.data
+        to_business_user = get_user_by_id(to_business_id)
+        to_business_name = to_business_user['business_name'] if to_business_user else ""
+        
+        print(f"Creating referral from {user['business_name']} to {to_business_name}")
+        
+        # Create the referral
+        referral_id = create_referral(
+            from_business=user['business_name'],
+            to_business=to_business_name,
+            to_name=referral_form.to_name.data,
+            contact_info=referral_form.contact_info.data,
+            referral_date=referral_form.referral_date.data,
+            notes=referral_form.notes.data,
+            from_user_id=user_id
+        )
+        
+        print(f"Referral created with ID: {referral_id}")
+        
+        if referral_id:
+            flash('Referral created successfully!', 'success')
+            
+            # Refresh the referrals list
+            referrals = get_referrals_by_user(user_id)
+            
+            # Create a new form to clear the fields
+            referral_form = ReferralForm()
+            referral_form.to_business.choices = business_choices
+            referral_form.from_business.data = user['business_name']
+            referral_form.referral_date.data = date.today()
+            
+            # Explicitly set other fields to empty
+            referral_form.to_name.data = ''
+            referral_form.contact_info.data = ''
+            referral_form.notes.data = ''
+            
+            # Render the template with the updated data
+            return render_template('dashboard.html', user=user, referral_form=referral_form, referrals=referrals, now=now)
+        else:
+            flash('Failed to create referral. Please try again.', 'error')
     
     return render_template('dashboard.html', user=user, referral_form=referral_form, referrals=referrals, now=now)
 
@@ -202,4 +262,4 @@ def logout():
     return response
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5004)
+    app.run(debug=True, port=5013)

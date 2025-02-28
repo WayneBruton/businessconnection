@@ -5,282 +5,378 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Business Connection</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/input-mask.js') }}"></script>
     <style>
-        /* Additional styles for dashboard */
-        .container {
-            max-width: 800px;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            padding-top: 20px;
         }
-        
-        .welcome-header {
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
         }
-        
-        .logout-btn {
-            background-color: #e74c3c;
-            padding: 8px 15px;
-            font-size: 14px;
-            width: auto;
-        }
-        
-        .logout-btn:hover {
-            background-color: #c0392b;
-        }
-        
-        .user-info {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .user-info h2 {
-            margin-bottom: 15px;
+
+        .welcome-message {
+            font-size: 24px;
+            font-weight: 600;
             color: #333;
         }
-        
-        .info-item {
+
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+
+        .flash-container {
+            margin-bottom: 30px;
+        }
+
+        .flash-message {
             margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
         }
         
-        .info-label {
-            font-weight: bold;
-            color: #555;
-        }
-        
-        .status-enabled {
-            color: #2ecc71;
-        }
-        
-        .status-disabled {
+        .flash-error {
+            background-color: #fde2e2;
             color: #e74c3c;
         }
-
-        /* Referral form styles */
-        .referral-section {
-            margin-top: 30px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
+        
+        .flash-success {
+            background-color: #d4edda;
+            color: #28a745;
         }
-
-        .referral-form textarea {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            min-height: 100px;
-            font-family: inherit;
-            resize: vertical;
+        
+        /* Referrals list styling */
+        .referrals-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
         }
-
-        .referral-list {
-            margin-top: 30px;
-        }
-
+        
         .referral-item {
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
             padding: 15px;
-            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-
+        
+        .referral-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
         .referral-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
         }
-
+        
+        .referral-title {
+            font-weight: 600;
+            font-size: 18px;
+            color: #333;
+        }
+        
         .referral-date {
-            color: #777;
+            color: #6c757d;
             font-size: 14px;
         }
-
-        .referral-status {
-            font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-
-        .status-pending {
-            background-color: #f39c12;
-            color: white;
-        }
-
-        .status-accepted {
-            background-color: #2ecc71;
-            color: white;
-        }
-
-        .status-rejected {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .status-completed {
-            background-color: #3498db;
-            color: white;
-        }
-
+        
         .referral-details {
             margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
         }
-
-        .no-referrals {
-            text-align: center;
-            color: #777;
-            padding: 20px;
+        
+        .referral-detail {
+            margin-bottom: 5px;
+        }
+        
+        .referral-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .referral-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-contacted {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-converted {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-lost {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-indicator {
+            margin-right: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .status-accepted {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-not-accepted {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-contacted {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .status-not-contacted {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-deal-accepted {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-deal-not-accepted {
+            background-color: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="welcome-header">
-            <h1>Welcome to Business Connection</h1>
+    <div class="dashboard-container">
+        <div class="header-section">
+            <h1>Welcome, {{ user.first_name }} {{ user.last_name }}</h1>
             <a href="{{ url_for('logout') }}"><button class="logout-btn">Logout</button></a>
         </div>
         
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <div class="user-info">
-            <h2>Your Profile</h2>
-            <div class="info-item">
-                <span class="info-label">Name:</span> {{ user.first_name }} {{ user.last_name }}
-            </div>
-            <div class="info-item">
-                <span class="info-label">Email:</span> {{ user.email }}
-            </div>
-            <div class="info-item">
-                <span class="info-label">Business:</span> {{ user.business_name }}
-            </div>
-            <div class="info-item">
-                <span class="info-label">Account Status:</span> 
-                {% if user.enabled %}
-                    <span class="status-enabled">Enabled</span>
-                {% else %}
-                    <span class="status-disabled">Disabled</span>
+        <div id="flash-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
                 {% endif %}
-            </div>
-            <div class="info-item">
-                <span class="info-label">Notifications:</span> 
-                {% if user.notify %}
-                    <span class="status-enabled">Enabled</span>
-                {% else %}
-                    <span class="status-disabled">Disabled</span>
-                {% endif %}
-            </div>
+            {% endwith %}
         </div>
         
-        <!-- Referral Form Section -->
-        <div class="referral-section">
-            <h2>Create a New Referral</h2>
-            <p>Fill out the form below to refer someone to a business.</p>
+        <div class="row">
+            <div class="col-md-12">
+                <!-- User Profile Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Your Profile</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="profile-info">
+                            <p><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                            <p><strong>Email:</strong> {{ user.email }}</p>
+                            <p><strong>Business:</strong> {{ user.business_name }}</p>
+                            {% if user.mobile_number %}
+                            <p><strong>Mobile:</strong> {{ user.mobile_number }}</p>
+                            {% endif %}
+                            {% if user.office_number %}
+                            <p><strong>Office:</strong> {{ user.office_number }}</p>
+                            {% endif %}
+                            <p><strong>Account Status:</strong> {% if user.enabled %}Active{% else %}Disabled{% endif %}</p>
+                            <p><strong>Notifications:</strong> {% if user.notify %}Enabled{% else %}Disabled{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            <form method="POST" action="{{ url_for('dashboard') }}" class="referral-form">
-                {{ referral_form.csrf_token }}
-                
-                <div class="form-group">
-                    <label for="from_business">From Business</label>
-                    <input type="text" class="form-control" value="{{ user.business_name }}" readonly>
+            <div class="col-md-12">
+                <!-- Referral Form Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Create Referral</h3>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('dashboard') }}" id="referral-form">
+                            {{ referral_form.csrf_token }}
+                            
+                            <div class="form-group">
+                                <label for="from_business">From Business</label>
+                                {{ referral_form.from_business(class="form-control") }}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="referral_date">Referral Date</label>
+                                {{ referral_form.referral_date(class="form-control") }}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="to_business">To Business</label>
+                                {{ referral_form.to_business(class="form-control") }}
+                                {% if referral_form.to_business.errors %}
+                                    {% for error in referral_form.to_business.errors %}
+                                        <div class="error-message">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="to_name">Referral Person Name</label>
+                                {{ referral_form.to_name(class="form-control", placeholder="Enter referral person's name") }}
+                                {% if referral_form.to_name.errors %}
+                                    {% for error in referral_form.to_name.errors %}
+                                        <div class="error-message">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contact_info">Contact Information</label>
+                                {{ referral_form.contact_info(class="form-control", placeholder="Enter email or phone number") }}
+                                {% if referral_form.contact_info.errors %}
+                                    {% for error in referral_form.contact_info.errors %}
+                                        <div class="error-message">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="notes">Notes</label>
+                                {{ referral_form.notes(class="form-control", placeholder="Enter any additional notes about this referral", rows=6) }}
+                                {% if referral_form.notes.errors %}
+                                    {% for error in referral_form.notes.errors %}
+                                        <div class="error-message">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                {{ referral_form.submit(class="btn btn-primary") }}
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="to_business">To Business</label>
-                    {{ referral_form.to_business(class="form-control", placeholder="Enter business name") }}
-                    {% if referral_form.to_business.errors %}
-                        {% for error in referral_form.to_business.errors %}
-                            <div class="error-message">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="to_name">Contact Person Name</label>
-                    {{ referral_form.to_name(class="form-control", placeholder="Enter contact person's name") }}
-                    {% if referral_form.to_name.errors %}
-                        {% for error in referral_form.to_name.errors %}
-                            <div class="error-message">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="contact_info">Contact Information (Email or Phone)</label>
-                    {{ referral_form.contact_info(class="form-control", placeholder="Enter email or phone number") }}
-                    {% if referral_form.contact_info.errors %}
-                        {% for error in referral_form.contact_info.errors %}
-                            <div class="error-message">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="details">Referral Details</label>
-                    {{ referral_form.details(class="form-control", placeholder="Describe what needs to be done") }}
-                    {% if referral_form.details.errors %}
-                        {% for error in referral_form.details.errors %}
-                            <div class="error-message">{{ error }}</div>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label>Date</label>
-                    <input type="text" class="form-control" value="{{ now.strftime('%Y-%m-%d %H:%M') }}" readonly>
-                </div>
-                
-                <div class="form-group">
-                    {{ referral_form.submit(class="btn") }}
-                </div>
-            </form>
+            </div>
         </div>
         
         <!-- Referrals List Section -->
-        <div class="referral-list">
+        <div class="referrals-section">
             <h2>Your Referrals</h2>
             
             {% if referrals %}
-                {% for referral in referrals %}
-                    <div class="referral-item">
-                        <div class="referral-header">
-                            <div>
-                                <strong>To:</strong> {{ referral.to_business }} ({{ referral.to_name }})
+                <div class="referrals-list">
+                    {% for referral in referrals %}
+                        <div class="referral-item">
+                            <div class="referral-header">
+                                <h3>{{ referral.to_business }}</h3>
+                                <span class="status-badge status-{{ referral.status }}">{{ referral.status }}</span>
                             </div>
-                            <div>
-                                <span class="referral-date">{{ referral.date_created.strftime('%Y-%m-%d %H:%M') }}</span>
-                                <span class="referral-status status-{{ referral.status }}">{{ referral.status }}</span>
+                            <div class="referral-details">
+                                <p><strong>Contact:</strong> {{ referral.to_name }}</p>
+                                <p><strong>Contact Info:</strong> {{ referral.contact_info }}</p>
+                                <p><strong>Date:</strong> {{ referral.referral_date if referral.referral_date else referral.created_at.strftime('%Y-%m-%d') }}</p>
+                                {% if referral.notes %}
+                                <p><strong>Notes:</strong> {{ referral.notes }}</p>
+                                {% endif %}
+                                <div class="referral-status-indicators">
+                                    <p>
+                                        <span class="status-indicator {% if referral.accept %}status-accepted{% else %}status-not-accepted{% endif %}">
+                                            {% if referral.accept %}Accepted{% else %}Not Accepted{% endif %}
+                                        </span>
+                                        <span class="status-indicator {% if referral.contacted %}status-contacted{% else %}status-not-contacted{% endif %}">
+                                            {% if referral.contacted %}Contacted{% else %}Not Contacted{% endif %}
+                                        </span>
+                                        <span class="status-indicator {% if referral.deal_accepted %}status-deal-accepted{% else %}status-deal-not-accepted{% endif %}">
+                                            {% if referral.deal_accepted %}Deal Accepted{% else %}Deal Not Accepted{% endif %}
+                                        </span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <strong>Contact:</strong> {{ referral.contact_info }}
-                        </div>
-                        <div class="referral-details">
-                            <strong>Details:</strong> {{ referral.details }}
-                        </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% else %}
                 <div class="no-referrals">
-                    <p>You haven't made any referrals yet.</p>
+                    <p>You haven't created any referrals yet.</p>
                 </div>
             {% endif %}
         </div>
     </div>
+    
+    <script>
+        // Check if there's a success flash message and clear form fields
+        document.addEventListener('DOMContentLoaded', function() {
+            const successFlash = document.querySelectorAll('.flash-success');
+            if (successFlash.length > 0 && Array.from(successFlash).some(flash => flash.textContent.includes('Referral created successfully'))) {
+                // Clear the form fields that should be cleared after submission
+                const form = document.getElementById('referral-form');
+                if (form) {
+                    // Clear to_name field
+                    const toNameField = form.querySelector('[name="to_name"]');
+                    if (toNameField) toNameField.value = '';
+                    
+                    // Clear contact_info field
+                    const contactInfoField = form.querySelector('[name="contact_info"]');
+                    if (contactInfoField) contactInfoField.value = '';
+                    
+                    // Clear notes field
+                    const notesField = form.querySelector('[name="notes"]');
+                    if (notesField) notesField.value = '';
+                }
+            }
+        });
+    </script>
 </body>
 </html>

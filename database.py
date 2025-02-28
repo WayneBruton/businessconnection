@@ -3,8 +3,10 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import bcrypt
 import jwt
+import os
 from datetime import datetime, timedelta
 import certifi
+from datetime import date
 
 # Load environment variables
 load_dotenv()
@@ -27,10 +29,13 @@ def verify_password(stored_password, provided_password):
     """Verify a stored password against one provided by user."""
     return bcrypt.checkpw(provided_password.encode('utf-8'), stored_password)
 
-def create_user(email, password, first_name, last_name, business_name, enabled=True, notify=True):
+def create_user(email, password, first_name, last_name, business_name, enabled=True, notify=True, mobile_number=None, office_number=None):
     """Create a new user in the database."""
     try:
-        hashed_password = hash_password(password)
+        # Hash the password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Create the user document
         user = {
             'email': email,
             'password': hashed_password,
@@ -39,12 +44,20 @@ def create_user(email, password, first_name, last_name, business_name, enabled=T
             'business_name': business_name,
             'enabled': enabled,
             'notify': notify,
+            'mobile_number': mobile_number,
+            'office_number': office_number,
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
+        
+        # Insert the user into the database
         result = users_collection.insert_one(user)
+        
         return str(result.inserted_id)
     except Exception as e:
+        if isinstance(e, DuplicateKeyError):
+            # Email already exists
+            return None
         print(f"Error creating user: {e}")
         return None
 
@@ -56,6 +69,10 @@ def get_user_by_id(user_id):
     """Retrieve a user by ID."""
     from bson.objectid import ObjectId
     return users_collection.find_one({'_id': ObjectId(user_id)})
+
+def get_all_enabled_users():
+    """Get all enabled users sorted by business name."""
+    return list(users_collection.find({"enabled": True}).sort("business_name", 1))
 
 def generate_jwt_token(user_id):
     """Generate a JWT token for a user."""
@@ -84,30 +101,84 @@ def decode_jwt_token(token):
     except jwt.InvalidTokenError:
         return None  # Invalid token
 
-def create_referral(from_user_id, from_business, to_business, to_name, contact_info, details):
-    """Create a new referral in the database."""
+def create_referral(from_business, to_business, to_name, contact_info, referral_date, notes, status="pending", from_user_id=None):
+    """Create a new referral."""
+    print(f"Creating referral in database: from {from_business} to {to_business}")
+    print(f"from_user_id: {from_user_id}")
+    
     try:
+        # Convert date object to string in ISO format
+        if isinstance(referral_date, date):
+            referral_date_str = referral_date.isoformat()
+        else:
+            referral_date_str = str(referral_date)
+            
         referral = {
-            'from_user_id': from_user_id,
-            'from_business': from_business,
-            'to_business': to_business,
-            'to_name': to_name,
-            'contact_info': contact_info,
-            'details': details,
-            'date_created': datetime.utcnow(),
-            'status': 'pending'  # pending, accepted, rejected, completed
+            "from_business": from_business,
+            "to_business": to_business,
+            "to_name": to_name,
+            "contact_info": contact_info,
+            "referral_date": referral_date_str,
+            "notes": notes,
+            "status": status,
+            "from_user_id": from_user_id,
+            "created_at": datetime.now(),
+            "accept": True,          # New field: Whether the business accepts the referral
+            "contacted": False,      # New field: Whether the business has contacted the referral
+            "deal_accepted": False   # New field: Whether the deal was accepted
         }
+        
+        print(f"Referral data: {referral}")
+        
         result = referrals_collection.insert_one(referral)
-        return str(result.inserted_id)
+        print(f"Insert result: {result.inserted_id}")
+        return str(result.inserted_id) if result.inserted_id else None
     except Exception as e:
         print(f"Error creating referral: {e}")
         return None
 
 def get_referrals_by_user(user_id):
-    """Get all referrals created by a user."""
-    return list(referrals_collection.find({'from_user_id': user_id}).sort('date_created', -1))
+    """Get all referrals for a user by their ID."""
+    try:
+        # Convert string ID to ObjectId if needed
+        if isinstance(user_id, str):
+            from bson.objectid import ObjectId
+            user_id = ObjectId(user_id)
+            
+        # Find referrals where from_user_id matches the given user_id
+        referrals = referrals_collection.find({"from_user_id": user_id}).sort("created_at", -1)
+        
+        # Convert ObjectId to string for each referral
+        referrals_list = []
+        for referral in referrals:
+            referral['_id'] = str(referral['_id'])
+            if 'from_user_id' in referral and referral['from_user_id']:
+                referral['from_user_id'] = str(referral['from_user_id'])
+            referrals_list.append(referral)
+            
+        return referrals_list
+    except Exception as e:
+        print(f"Error getting referrals by user: {e}")
+        return []
 
 def get_referral_by_id(referral_id):
     """Get a referral by its ID."""
-    from bson.objectid import ObjectId
-    return referrals_collection.find_one({'_id': ObjectId(referral_id)})
+    try:
+        # Convert string ID to ObjectId if needed
+        if isinstance(referral_id, str):
+            from bson.objectid import ObjectId
+            referral_id = ObjectId(referral_id)
+            
+        # Find the referral by ID
+        referral = referrals_collection.find_one({"_id": referral_id})
+        
+        # Convert ObjectId to string
+        if referral:
+            referral['_id'] = str(referral['_id'])
+            if 'from_user_id' in referral and referral['from_user_id']:
+                referral['from_user_id'] = str(referral['from_user_id'])
+        
+        return referral
+    except Exception as e:
+        print(f"Error getting referral by ID: {e}")
+        return None
