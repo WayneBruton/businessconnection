@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Business Connection</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/input-mask.js') }}"></script>
     <style>
         /* Additional styles specific to registration page */
         .container {
@@ -84,6 +85,26 @@
                 {{ form.business_name(class="form-control", placeholder="Enter your business name") }}
                 {% if form.business_name.errors %}
                     {% for error in form.business_name.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="mobile_number">Mobile Number</label>
+                {{ form.mobile_number(class="form-control phone-input", placeholder="(###) ###-####") }}
+                {% if form.mobile_number.errors %}
+                    {% for error in form.mobile_number.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="office_number">Office Number</label>
+                {{ form.office_number(class="form-control phone-input", placeholder="(###) ###-####") }}
+                {% if form.office_number.errors %}
+                    {% for error in form.office_number.errors %}
                         <div class="error-message">{{ error }}</div>
                     {% endfor %}
                 {% endif %}
