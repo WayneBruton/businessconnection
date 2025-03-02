@@ -74,6 +74,10 @@ def get_all_enabled_users():
     """Get all enabled users sorted by business name."""
     return list(users_collection.find({"enabled": True}).sort("business_name", 1))
 
+def get_all_enabled_notifiable_users():
+    """Get all enabled users where notify is true, sorted by business name."""
+    return list(users_collection.find({"enabled": True, "notify": True}).sort("business_name", 1))
+
 def generate_jwt_token(user_id):
     """Generate a JWT token for a user."""
     payload = {
@@ -125,7 +129,7 @@ def create_referral(from_business, to_business, to_name, contact_info, referral_
             "created_at": datetime.now(),
             "accept": True,          # New field: Whether the business accepts the referral
             "contacted": False,      # New field: Whether the business has contacted the referral
-            "deal_accepted": False   # New field: Whether the deal was accepted
+            "deal_accepted": "Pending"   # New field: Status of the deal (Pending, Accepted, Rejected)
         }
         
         print(f"Referral data: {referral}")

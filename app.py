@@ -6,9 +6,11 @@ from forms import LoginForm, RegistrationForm, ReferralForm
 from database import (
     create_user, get_user_by_email, verify_password, 
     generate_jwt_token, decode_jwt_token, get_user_by_id,
-    create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id
+    create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id,
+    get_all_enabled_notifiable_users
 )
 from datetime import datetime
+import requests 
 
 # Load environment variables
 load_dotenv()
@@ -173,8 +175,8 @@ def dashboard():
     # Create forms
     referral_form = ReferralForm()
     
-    # Get all enabled users for the dropdown
-    all_users = get_all_enabled_users()
+    # Get all enabled users with notify=True for the dropdown
+    all_users = get_all_enabled_notifiable_users()
     # Filter out the current user and prepare choices
     business_choices = [(str(u['_id']), f"{u['business_name']} ({u['first_name']} {u['last_name']})") for u in all_users if str(u['_id']) != user_id]
     # Sort choices alphabetically by business name
@@ -228,22 +230,28 @@ def dashboard():
         if referral_id:
             flash('Referral created successfully!', 'success')
             
-            # Refresh the referrals list
-            referrals = get_referrals_by_user(user_id)
+            # Get the referral by ID
+            referral = get_referral_by_id(referral_id)
+            print(f"Referral: {referral}")
             
-            # Create a new form to clear the fields
-            referral_form = ReferralForm()
-            referral_form.to_business.choices = business_choices
-            referral_form.from_business.data = user['business_name']
-            referral_form.referral_date.data = date.today()
+            # Convert MongoDB document to JSON-serializable dict
+            # Handle ObjectId and datetime serialization
+            serializable_referral = {}
+            for key, value in referral.items():
+                if key == '_id':
+                    serializable_referral[key] = str(value)
+                elif isinstance(value, datetime):
+                    serializable_referral[key] = value.isoformat()
+                else:
+                    serializable_referral[key] = value
             
-            # Explicitly set other fields to empty
-            referral_form.to_name.data = ''
-            referral_form.contact_info.data = ''
-            referral_form.notes.data = ''
+            url = "https://automation-contemplation.onrender.com/webhook-test/ca82049e-823e-42b4-818f-ab1d9cd9313c"
+            # call the webhook and send the referral data
+            response = requests.post(url, json=serializable_referral)
+            print(f"Webhook response: {response.text}")
             
-            # Render the template with the updated data
-            return render_template('dashboard.html', user=user, referral_form=referral_form, referrals=referrals, now=now)
+            # Redirect to the dashboard to ensure a fresh form
+            return redirect(url_for('dashboard'))
         else:
             flash('Failed to create referral. Please try again.', 'error')
     
@@ -262,4 +270,4 @@ def logout():
     return response
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5013)
+    app.run(debug=True, port=5015)
