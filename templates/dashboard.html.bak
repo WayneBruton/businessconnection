@@ -141,10 +141,6 @@
             border-bottom: 2px solid #e74c3c;
         }
         
-        .filtered-referrals-section h2 {
-            border-bottom: 2px solid #27ae60;
-        }
-        
         .referrals-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -167,11 +163,6 @@
         .received-referral {
             border-left: 4px solid #e74c3c;
             background-color: #fff9f9;
-        }
-        
-        .filtered-referral {
-            border-left: 4px solid #27ae60;
-            background-color: #f0fff0;
         }
         
         .referral-header {
@@ -208,10 +199,6 @@
         
         .status-completed {
             background-color: #2ecc71;
-        }
-        
-        .status-rejected {
-            background-color: #e74c3c;
         }
         
         .referral-details p {
@@ -441,7 +428,7 @@
         
         <!-- Referrals List Section -->
         <div class="referrals-section received-referrals-section">
-            <h2>Accepted Referrals with Pending Deals</h2>
+            <h2>Referrals Sent to You</h2>
             
             {% if received_referrals %}
                 <div class="referrals-list">
@@ -549,15 +536,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const statusSelects = document.querySelectorAll('.status-select');
             
-            // Debug: Print initial values of all dropdowns
-            console.log('Initial dropdown values:');
-            statusSelects.forEach(select => {
-                const referralId = select.getAttribute('data-referral-id');
-                const field = select.getAttribute('data-field');
-                const value = select.value;
-                console.log(`Referral ${referralId}, Field: ${field}, Value: ${value}`);
-            });
-            
             statusSelects.forEach(select => {
                 select.addEventListener('change', function() {
                     const referralId = this.getAttribute('data-referral-id');
@@ -566,17 +544,10 @@
                     
                     console.log(`Updating ${field} to ${value} for referral ${referralId}`);
                     
-                    // Convert value based on field type
+                    // Convert string "true"/"false" to boolean for boolean fields
                     if (field === 'accept' || field === 'contacted') {
                         value = value === 'true';
-                    }
-                    
-                    // For deal_accepted, ensure it's one of the valid values
-                    if (field === 'deal_accepted') {
-                        if (!['Pending', 'Accepted', 'Rejected'].includes(value)) {
-                            value = 'Pending';
-                            console.log(`Invalid deal_accepted value, defaulting to: ${value}`);
-                        }
+                        console.log(`Converted value to boolean: ${value}`);
                     }
                     
                     // Get CSRF token if available

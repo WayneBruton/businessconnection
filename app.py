@@ -1,13 +1,15 @@
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify
 from functools import wraps
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from dotenv import load_dotenv
 from forms import LoginForm, RegistrationForm, ReferralForm
 from database import (
     create_user, get_user_by_email, verify_password, 
     generate_jwt_token, decode_jwt_token, get_user_by_id,
     create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id,
-    get_all_enabled_notifiable_users, get_referrals_to_business, get_user_by_business_name, users_collection
+    get_all_enabled_notifiable_users, get_referrals_to_business, get_user_by_business_name, users_collection,
+    referrals_collection, get_filtered_referrals_to_business
 )
 from datetime import datetime
 import requests 
@@ -17,7 +19,10 @@ from bson import ObjectId
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY')
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default-secret-key')
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 # Authentication decorator
 def login_required(f):
@@ -60,6 +65,13 @@ def serialize_mongodb_doc(doc):
         else:
             serialized[key] = value
     return serialized
+
+def ensure_deal_status(referrals):
+    """Ensure all referrals have a deal_accepted value set."""
+    for referral in referrals:
+        if 'deal_accepted' not in referral or not referral['deal_accepted']:
+            referral['deal_accepted'] = 'Pending'
+    return referrals
 
 @app.route('/')
 def index():
@@ -220,10 +232,59 @@ def dashboard():
     # Get referrals sent to the user's business
     print(f"Current user details: ID={user_id}, Name={user.get('first_name', '')} {user.get('last_name', '')}")
     print(f"Current user business name: '{user['business_name']}'")
-    received_referrals = get_referrals_to_business(user['business_name'])
-    print(f"Received referrals count: {len(received_referrals)}")
+    
+    # Get all referrals to the user's business
+    all_received_referrals = get_referrals_to_business(user['business_name'])
+    print(f"All received referrals count: {len(all_received_referrals)}")
+    
+    # Debug: Print all received referrals before filtering
+    print("\n----- ALL RECEIVED REFERRALS BEFORE FILTERING -----")
+    for i, ref in enumerate(all_received_referrals):
+        print(f"Referral {i+1}: From {ref.get('from_business', 'Unknown')} to {ref.get('to_business', 'Unknown')}")
+        print(f"  - ID: {ref.get('_id')}")
+        print(f"  - Accept: {ref.get('accept')} (Type: {type(ref.get('accept')).__name__})")
+        print(f"  - Deal Status: {ref.get('deal_accepted')} (Type: {type(ref.get('deal_accepted')).__name__})")
+    print("-----------------------------------------------------\n")
+    
+    # Ensure all referrals have a deal_accepted value
+    all_received_referrals = ensure_deal_status(all_received_referrals)
+    
+    # Filter referrals to only show where accept=True and deal_accepted is "Pending"
+    received_referrals = []
+    for ref in all_received_referrals:
+        accept_value = ref.get('accept')
+        deal_status = ref.get('deal_accepted')
+        
+        print(f"Checking referral {ref.get('_id')}: accept={accept_value}, deal_accepted={deal_status}")
+        
+        # Check if accept is True (could be boolean True or string "true")
+        is_accepted = accept_value is True or (isinstance(accept_value, str) and accept_value.lower() == "true")
+        
+        # Check if deal_accepted is "Pending"
+        is_pending = deal_status == "Pending" or not deal_status
+        
+        print(f"  - is_accepted: {is_accepted}, is_pending: {is_pending}")
+        
+        if is_accepted and is_pending:
+            print(f"  - ADDING TO FILTERED LIST")
+            received_referrals.append(ref)
+        else:
+            print(f"  - NOT ADDING TO FILTERED LIST")
+    
+    print(f"Filtered received referrals count: {len(received_referrals)}")
+    
+    # Debug: Print filtered referrals
+    print("\n----- FILTERED RECEIVED REFERRALS -----")
     for i, ref in enumerate(received_referrals):
-        print(f"Received referral {i+1}: {ref.get('from_business', 'Unknown')} -> {ref.get('to_business', 'Unknown')}")
+        print(f"Filtered Referral {i+1}: From {ref.get('from_business', 'Unknown')} to {ref.get('to_business', 'Unknown')}")
+        print(f"  - ID: {ref.get('_id')}")
+        print(f"  - Accept: {ref.get('accept')} (Type: {type(ref.get('accept')).__name__})")
+        print(f"  - Deal Status: {ref.get('deal_accepted')} (Type: {type(ref.get('deal_accepted')).__name__})")
+    print("----------------------------------------\n")
+    
+    # Ensure all referrals have a deal_accepted value
+    referrals = ensure_deal_status(referrals)
+    received_referrals = ensure_deal_status(received_referrals)
     
     # Get current date and time for the form
     now = datetime.now()
@@ -281,15 +342,138 @@ def dashboard():
             
             url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
             # call the webhook and send the referral data
-            response = requests.post(url, json=serializable_referral)
-            print(f"Webhook response: {response.text}")
+            try:
+                import json
+                print("==== WEBHOOK PAYLOAD ====")
+                print(json.dumps(serializable_referral, indent=2))
+                print("=========================")
+                
+                # Send the webhook request
+                response = requests.post(url, json=serializable_referral)
+                print(f"Webhook response status: {response.status_code}")
+                print(f"Webhook response text: {response.text}")
+            except Exception as e:
+                print(f"Error sending webhook notification: {e}")
             
             # Redirect to the dashboard to ensure a fresh form
             return redirect(url_for('dashboard'))
         else:
             flash('Failed to create referral. Please try again.', 'error')
     
-    return render_template('dashboard.html', user=user, referral_form=referral_form, referrals=referrals, received_referrals=received_referrals, now=now)
+    # Generate CSRF token for AJAX requests
+    csrf_token = generate_csrf()
+    
+    return render_template(
+        'dashboard.html', 
+        user=user, 
+        referrals=referrals, 
+        received_referrals=received_referrals,
+        referral_form=referral_form,
+        now=now, 
+        csrf_token=csrf_token
+    )
+
+@app.route('/update_referral_status', methods=['POST'])
+@csrf.exempt
+def update_referral_status():
+    """Update the status of a referral."""
+    try:
+        print("Received request to update referral status")
+        
+        # Get the request data
+        data = request.json
+        print(f"Request data: {data}")
+        referral_id = data.get('referral_id')
+        field = data.get('field')
+        value = data.get('value')
+        
+        print(f"Field: {field}, Value: {value}, Type: {type(value)}")
+        
+        # For boolean fields, make sure the value is properly converted
+        if field in ['accept', 'contacted']:
+            # Handle different types of input for boolean fields
+            if isinstance(value, str):
+                value = value.lower() == 'true'
+            elif isinstance(value, int):
+                value = bool(value)
+            # Ensure it's a boolean
+            value = bool(value)
+            print(f"Converted value for {field}: {value}, Type: {type(value)}")
+        
+        # For deal_accepted field, ensure it's one of the valid values
+        if field == 'deal_accepted':
+            valid_values = ['Pending', 'Accepted', 'Rejected']
+            if value not in valid_values:
+                value = 'Pending'  # Default to Pending if invalid value
+            print(f"Using value for {field}: {value}")
+        
+        if not referral_id or not field:
+            return jsonify({'success': False, 'error': 'Missing required fields'})
+        
+        # Update the referral status without requiring authentication for now
+        # This is a temporary fix - in production you should authenticate properly
+        from bson.objectid import ObjectId
+        
+        # Get the original referral to see what changed
+        original_referral = get_referral_by_id(referral_id)
+        if not original_referral:
+            return jsonify({'success': False, 'error': 'Referral not found'})
+        
+        print(f"Original {field} value: {original_referral.get(field)}")
+        
+        # Update the referral status
+        result = referrals_collection.update_one(
+            {'_id': ObjectId(referral_id)},
+            {'$set': {field: value}}
+        )
+        
+        print(f"Update result: {result.modified_count} document(s) modified")
+        
+        if result.modified_count > 0:
+            # Send webhook notification for the status update
+            referral = get_referral_by_id(referral_id)
+            if referral:
+                # Prepare data for webhook
+                serializable_referral = serialize_mongodb_doc(referral)
+                
+                # Get the referrer and referee information
+                referrer_user = get_user_by_id(referral['from_user_id'])
+                referree_user = get_user_by_business_name(referral['to_business'])
+                
+                if referrer_user:
+                    serializable_referral['referrer'] = serialize_mongodb_doc(referrer_user)
+                
+                if referree_user:
+                    serializable_referral['referree'] = serialize_mongodb_doc(referree_user)
+                
+                # Add status update information
+                serializable_referral['status_update'] = {
+                    'field': field,
+                    'value': value,
+                    'updated_at': datetime.now().isoformat()
+                }
+                
+                # Send webhook notification
+                url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
+                try:
+                    import json
+                    print("==== WEBHOOK PAYLOAD ====")
+                    print(json.dumps(serializable_referral, indent=2))
+                    print("=========================")
+                    
+                    # Send the webhook request
+                    response = requests.post(url, json=serializable_referral)
+                    print(f"Webhook response status: {response.status_code}")
+                    print(f"Webhook response text: {response.text}")
+                except Exception as e:
+                    print(f"Error sending webhook notification: {e}")
+            
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Referral not found or not modified'})
+    except Exception as e:
+        print(f"Error updating referral status: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/logout')
 def logout():

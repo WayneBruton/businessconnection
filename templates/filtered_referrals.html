@@ -1,0 +1,26 @@
+<!-- Filtered Referrals Section -->
+<div class="referrals-section filtered-referrals-section">
+    <h2>Accepted Referrals with Completed Deals</h2>
+    
+    {% if filtered_referrals %}
+        <div class="referrals-list">
+            {% for referral in filtered_referrals %}
+                <div class="referral-item filtered-referral" data-referral-id="{{ referral._id }}">
+                    <div class="referral-header">
+                        <h3>From: {{ referral.from_business }}</h3>
+                        <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
+                        <span class="status-badge {% if referral.deal_accepted == 'Accepted' %}status-completed{% elif referral.deal_accepted == 'Rejected' %}status-rejected{% endif %}">{{ referral.deal_accepted }}</span>
+                    </div>
+                    <p><strong>Contact:</strong> {{ referral.to_name }}</p>
+                    <p><strong>Info:</strong> {{ referral.contact_info }}</p>
+                    <p><strong>Date:</strong> {{ referral.referral_date }}</p>
+                    {% if referral.from_user_name %}
+                        <p><strong>Referred by:</strong> {{ referral.from_user_name }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="no-referrals">No completed deals found.</p>
+    {% endif %}
+</div>

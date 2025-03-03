@@ -346,3 +346,44 @@ def get_referrals_to_business(business_name):
     except Exception as e:
         print(f"Error getting referrals to business: {e}")
         return []
+
+def get_filtered_referrals_to_business(business_name, accept=None, deal_accepted=None):
+    """
+    Get filtered referrals sent to a specific business by business name.
+    
+    Parameters:
+    - business_name: The name of the business to get referrals for
+    - accept: Filter by accept status (True/False/None)
+    - deal_accepted: Filter by deal_accepted status ("Pending"/"Accepted"/"Rejected"/None)
+    
+    If accept or deal_accepted is None, no filtering is applied for that field.
+    """
+    try:
+        print(f"Searching for filtered referrals to business: '{business_name}'")
+        print(f"Filters - accept: {accept}, deal_accepted: {deal_accepted}")
+        
+        # First get all referrals to the business
+        all_referrals = get_referrals_to_business(business_name)
+        
+        # Apply filters
+        filtered_referrals = []
+        for referral in all_referrals:
+            # Check accept filter if specified
+            if accept is not None and referral.get('accept') != accept:
+                continue
+                
+            # Check deal_accepted filter if specified
+            if deal_accepted is not None:
+                if deal_accepted == "not_pending" and referral.get('deal_accepted') == "Pending":
+                    continue
+                elif deal_accepted != "not_pending" and referral.get('deal_accepted') != deal_accepted:
+                    continue
+            
+            # If we got here, the referral passed all filters
+            filtered_referrals.append(referral)
+        
+        print(f"Found {len(filtered_referrals)} referrals after filtering")
+        return filtered_referrals
+    except Exception as e:
+        print(f"Error getting filtered referrals to business: {e}")
+        return []
