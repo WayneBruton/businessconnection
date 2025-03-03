@@ -7,10 +7,11 @@ from database import (
     create_user, get_user_by_email, verify_password, 
     generate_jwt_token, decode_jwt_token, get_user_by_id,
     create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id,
-    get_all_enabled_notifiable_users, get_referrals_to_business
+    get_all_enabled_notifiable_users, get_referrals_to_business, get_user_by_business_name, users_collection
 )
 from datetime import datetime
 import requests 
+from bson import ObjectId
 
 # Load environment variables
 load_dotenv()
@@ -41,6 +42,24 @@ def login_required(f):
         flash('Please log in to access this page', 'error')
         return redirect(url_for('login'))
     return decorated_function
+
+def serialize_mongodb_doc(doc):
+    """Helper function to serialize MongoDB documents for JSON"""
+    serialized = {}
+    for key, value in doc.items():
+        if key == '_id' or isinstance(value, ObjectId):
+            serialized[key] = str(value)
+        elif isinstance(value, datetime):
+            serialized[key] = value.isoformat()
+        elif isinstance(value, bytes):
+            serialized[key] = value.decode('utf-8', errors='replace')
+        elif isinstance(value, dict):
+            serialized[key] = serialize_mongodb_doc(value)
+        elif isinstance(value, list):
+            serialized[key] = [serialize_mongodb_doc(item) if isinstance(item, dict) else item for item in value]
+        else:
+            serialized[key] = value
+    return serialized
 
 @app.route('/')
 def index():
@@ -243,20 +262,24 @@ def dashboard():
             
             # Get the referral by ID
             referral = get_referral_by_id(referral_id)
-            print(f"Referral: {referral}")
+            # print(f"Referral: {referral}")
             
-            # Convert MongoDB document to JSON-serializable dict
-            # Handle ObjectId and datetime serialization
-            serializable_referral = {}
-            for key, value in referral.items():
-                if key == '_id':
-                    serializable_referral[key] = str(value)
-                elif isinstance(value, datetime):
-                    serializable_referral[key] = value.isoformat()
-                else:
-                    serializable_referral[key] = value
+            # Get the referrer referree information
+            referrer_user = get_user_by_id(referral['from_user_id'])
+            referree_user = get_user_by_business_name(referral['to_business'])
+            # print(f"ReferrerXXXX: {referrer_user}")
+            # print(f"ReferreeYYYY: {referree_user}")
+            # Convert MongoDB document to JSON-serializable dict using the helper function
+            serializable_referral = serialize_mongodb_doc(referral)
             
-            url = "https://automation-contemplation.onrender.com/webhook-test/ca82049e-823e-42b4-818f-ab1d9cd9313c"
+            # Also add the referrer and referee information - make sure they're serializable
+            if referrer_user:
+                serializable_referral['referrer'] = serialize_mongodb_doc(referrer_user)
+            
+            if referree_user:
+                serializable_referral['referree'] = serialize_mongodb_doc(referree_user)
+            
+            url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
             # call the webhook and send the referral data
             response = requests.post(url, json=serializable_referral)
             print(f"Webhook response: {response.text}")

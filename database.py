@@ -70,6 +70,17 @@ def get_user_by_id(user_id):
     from bson.objectid import ObjectId
     return users_collection.find_one({'_id': ObjectId(user_id)})
 
+def get_user_by_business_name(business_name):
+    """Get a user by their business name."""
+    try:
+        user = users_collection.find_one({"business_name": business_name})
+        if user:
+            user['_id'] = str(user['_id'])
+        return user
+    except Exception as e:
+        print(f"Error getting user by business name: {e}")
+        return None
+
 def get_all_enabled_users():
     """Get all enabled users sorted by business name."""
     return list(users_collection.find({"enabled": True}).sort("business_name", 1))
