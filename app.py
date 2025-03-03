@@ -7,7 +7,7 @@ from database import (
     create_user, get_user_by_email, verify_password, 
     generate_jwt_token, decode_jwt_token, get_user_by_id,
     create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id,
-    get_all_enabled_notifiable_users
+    get_all_enabled_notifiable_users, get_referrals_to_business
 )
 from datetime import datetime
 import requests 
@@ -194,6 +194,17 @@ def dashboard():
     
     # Get user's referrals
     referrals = get_referrals_by_user(user_id)
+    print(f"User's sent referrals count: {len(referrals)}")
+    for i, ref in enumerate(referrals):
+        print(f"Sent referral {i+1}: {ref.get('from_business', 'Unknown')} -> {ref.get('to_business', 'Unknown')}")
+    
+    # Get referrals sent to the user's business
+    print(f"Current user details: ID={user_id}, Name={user.get('first_name', '')} {user.get('last_name', '')}")
+    print(f"Current user business name: '{user['business_name']}'")
+    received_referrals = get_referrals_to_business(user['business_name'])
+    print(f"Received referrals count: {len(received_referrals)}")
+    for i, ref in enumerate(received_referrals):
+        print(f"Received referral {i+1}: {ref.get('from_business', 'Unknown')} -> {ref.get('to_business', 'Unknown')}")
     
     # Get current date and time for the form
     now = datetime.now()
@@ -255,7 +266,7 @@ def dashboard():
         else:
             flash('Failed to create referral. Please try again.', 'error')
     
-    return render_template('dashboard.html', user=user, referral_form=referral_form, referrals=referrals, now=now)
+    return render_template('dashboard.html', user=user, referral_form=referral_form, referrals=referrals, received_referrals=received_referrals, now=now)
 
 @app.route('/logout')
 def logout():

@@ -7,97 +7,161 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="{{ url_for('static', filename='js/input-mask.js') }}"></script>
     <style>
+        /* Base Styles */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
             margin: 0;
             padding: 0;
-            background-color: #f8f9fa;
-            padding-top: 20px;
+            background-color: #f9f9f9;
         }
-
+        
         .container {
-            max-width: 1600px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-
-        .dashboard-container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .header {
+        
+        /* Header Styles */
+        .dashboard-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid #eee;
         }
-
-        .welcome-message {
-            font-size: 24px;
-            font-weight: 600;
-            color: #333;
+        
+        .dashboard-header h1 {
+            margin: 0;
+            color: #2c3e50;
         }
-
-        .logout-btn {
-            background-color: #dc3545;
+        
+        .user-actions a {
+            margin-left: 15px;
+            text-decoration: none;
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .user-actions a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Dashboard Content */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        /* Form Section */
+        .form-section {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-section h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn-primary {
+            background-color: #3498db;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 20px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: 500;
             transition: background-color 0.3s;
         }
-
-        .logout-btn:hover {
-            background-color: #c82333;
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
         }
-
-        .flash-container {
+        
+        /* Referrals Section */
+        .referrals-section {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             margin-bottom: 30px;
         }
-
-        .flash-message {
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 5px;
-            text-align: center;
+        
+        .referrals-section h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
         
-        .flash-error {
-            background-color: #fde2e2;
-            color: #e74c3c;
+        .received-referrals-section h2 {
+            border-bottom: 2px solid #e74c3c;
         }
         
-        .flash-success {
-            background-color: #d4edda;
-            color: #28a745;
-        }
-        
-        /* Referrals list styling */
         .referrals-list {
             display: grid;
-            gap: 15px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
         
         .referral-item {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
+            border: 1px solid #eee;
+            border-radius: 6px;
             padding: 15px;
+            background-color: #f9f9f9;
             transition: transform 0.2s, box-shadow 0.2s;
         }
         
         .referral-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .received-referral {
+            border-left: 4px solid #e74c3c;
+            background-color: #fff9f9;
         }
         
         .referral-header {
@@ -105,106 +169,114 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
         }
         
-        .referral-title {
-            font-weight: 600;
+        .referral-header h3 {
+            margin: 0;
             font-size: 18px;
-            color: #333;
+            color: #2c3e50;
         }
         
-        .referral-date {
-            color: #6c757d;
-            font-size: 14px;
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            background-color: #95a5a6;
         }
         
-        .referral-details {
-            margin-top: 10px;
-        }
-        
-        .referral-detail {
-            margin-bottom: 5px;
-        }
-        
-        .referral-label {
-            font-weight: 600;
-            color: #495057;
-        }
-        
-        .referral-status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 600;
+        .status-new {
+            background-color: #3498db;
         }
         
         .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
+            background-color: #f39c12;
         }
         
-        .status-contacted {
-            background-color: #cce5ff;
-            color: #004085;
+        .status-completed {
+            background-color: #2ecc71;
         }
         
-        .status-converted {
-            background-color: #d4edda;
-            color: #155724;
+        .referral-details p {
+            margin: 8px 0;
+            font-size: 14px;
         }
         
-        .status-lost {
-            background-color: #f8d7da;
-            color: #721c24;
+        .referral-status-indicators {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
         }
         
         .status-indicator {
-            margin-right: 10px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 600;
+            display: inline-block;
+            padding: 3px 8px;
+            margin-right: 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            background-color: #f1f1f1;
         }
         
         .status-accepted {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #d5f5e3;
+            color: #27ae60;
         }
         
         .status-not-accepted {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #fdebd0;
+            color: #e67e22;
         }
         
         .status-contacted {
-            background-color: #cce5ff;
-            color: #004085;
+            background-color: #d5f5e3;
+            color: #27ae60;
         }
         
         .status-not-contacted {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #fdebd0;
+            color: #e67e22;
         }
         
         .status-deal-accepted {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .status-deal-not-accepted {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status-deal-pending {
-            background-color: #fff3cd;
-            color: #856404;
+            background-color: #d5f5e3;
+            color: #27ae60;
         }
         
         .status-deal-rejected {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #fadbd8;
+            color: #e74c3c;
+        }
+        
+        .status-deal-pending {
+            background-color: #eaecee;
+            color: #7f8c8d;
+        }
+        
+        .no-referrals {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .user-actions {
+                margin-top: 15px;
+            }
+            
+            .referrals-list {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -363,6 +435,53 @@
             {% else %}
                 <div class="no-referrals">
                     <p>You haven't created any referrals yet.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Received Referrals Section -->
+        <div class="referrals-section received-referrals-section">
+            <h2>Referrals Sent to You</h2>
+            
+            {% if received_referrals %}
+                <div class="referrals-list">
+                    {% for referral in received_referrals %}
+                        <div class="referral-item received-referral">
+                            <div class="referral-header">
+                                <h3>From: {{ referral.from_business }}</h3>
+                                <span class="status-badge status-{{ referral.status }}">{{ referral.status }}</span>
+                            </div>
+                            <div class="referral-details">
+                                <p><strong>Referred by:</strong> {{ referral.from_user_name }}</p>
+                                <p><strong>Contact:</strong> {{ referral.to_name }}</p>
+                                <p><strong>Contact Info:</strong> {{ referral.contact_info }}</p>
+                                <p><strong>Date:</strong> {{ referral.referral_date if referral.referral_date else referral.created_at.strftime('%Y-%m-%d') }}</p>
+                                {% if referral.notes %}
+                                <p><strong>Notes:</strong> {{ referral.notes }}</p>
+                                {% endif %}
+                                <div class="referral-status-indicators">
+                                    <p>
+                                        <span class="status-indicator {% if referral.accept %}status-accepted{% else %}status-not-accepted{% endif %}">
+                                            {% if referral.accept %}Accepted{% else %}Not Accepted{% endif %}
+                                        </span>
+                                        <span class="status-indicator {% if referral.contacted %}status-contacted{% else %}status-not-contacted{% endif %}">
+                                            {% if referral.contacted %}Contacted{% else %}Not Contacted{% endif %}
+                                        </span>
+                                        <span class="status-indicator 
+                                            {% if referral.deal_accepted == 'Accepted' %}status-deal-accepted
+                                            {% elif referral.deal_accepted == 'Rejected' %}status-deal-rejected
+                                            {% else %}status-deal-pending{% endif %}">
+                                            Deal: {{ referral.deal_accepted }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="no-referrals">
+                    <p>You haven't received any referrals yet.</p>
                 </div>
             {% endif %}
         </div>

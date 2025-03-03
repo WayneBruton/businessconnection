@@ -142,24 +142,55 @@ def create_referral(from_business, to_business, to_name, contact_info, referral_
         return None
 
 def get_referrals_by_user(user_id):
-    """Get all referrals for a user by their ID."""
+    """Get all referrals for a user by their ID or business name."""
     try:
         # Convert string ID to ObjectId if needed
         if isinstance(user_id, str):
             from bson.objectid import ObjectId
             user_id = ObjectId(user_id)
-            
-        # Find referrals where from_user_id matches the given user_id
-        referrals = referrals_collection.find({"from_user_id": user_id}).sort("created_at", -1)
         
-        # Convert ObjectId to string for each referral
-        referrals_list = []
-        for referral in referrals:
-            referral['_id'] = str(referral['_id'])
-            if 'from_user_id' in referral and referral['from_user_id']:
-                referral['from_user_id'] = str(referral['from_user_id'])
-            referrals_list.append(referral)
+        # Get the user to find their business name
+        user = get_user_by_id(user_id)
+        if not user:
+            print(f"User not found with ID: {user_id}")
+            return []
             
+        business_name = user.get('business_name')
+        print(f"Looking for referrals for user ID: {user_id}, business name: {business_name}")
+        
+        # Find referrals where from_user_id matches the given user_id
+        referrals_by_id = list(referrals_collection.find({"from_user_id": user_id}).sort("created_at", -1))
+        print(f"Found {len(referrals_by_id)} referrals by user ID")
+        
+        # Find referrals where from_business matches the user's business name
+        referrals_by_business = list(referrals_collection.find({"from_business": business_name}).sort("created_at", -1))
+        print(f"Found {len(referrals_by_business)} referrals by business name")
+        
+        # Combine the results, avoiding duplicates
+        seen_ids = set()
+        referrals_list = []
+        
+        # Process referrals by ID first
+        for referral in referrals_by_id:
+            referral_id = str(referral['_id'])
+            if referral_id not in seen_ids:
+                seen_ids.add(referral_id)
+                referral['_id'] = referral_id
+                if 'from_user_id' in referral and referral['from_user_id']:
+                    referral['from_user_id'] = str(referral['from_user_id'])
+                referrals_list.append(referral)
+        
+        # Then process referrals by business name
+        for referral in referrals_by_business:
+            referral_id = str(referral['_id'])
+            if referral_id not in seen_ids:
+                seen_ids.add(referral_id)
+                referral['_id'] = referral_id
+                if 'from_user_id' in referral and referral['from_user_id']:
+                    referral['from_user_id'] = str(referral['from_user_id'])
+                referrals_list.append(referral)
+        
+        print(f"Total combined referrals: {len(referrals_list)}")
         return referrals_list
     except Exception as e:
         print(f"Error getting referrals by user: {e}")
@@ -186,3 +217,121 @@ def get_referral_by_id(referral_id):
     except Exception as e:
         print(f"Error getting referral by ID: {e}")
         return None
+
+def get_referrals_to_business(business_name):
+    """Get all referrals sent to a specific business by business name."""
+    try:
+        print(f"Searching for referrals to business: '{business_name}'")
+        
+        # Direct check for C.E.L. Paving
+        if "c" in business_name.lower() and "e" in business_name.lower() and "l" in business_name.lower() and "paving" in business_name.lower():
+            print("Direct match for C.E.L. Paving detected")
+            # Get all referrals to C.E.L. Paving directly
+            referrals = list(referrals_collection.find({"to_business": "C.E.L. Paving"}).sort("created_at", -1))
+            if referrals:
+                print(f"Found {len(referrals)} referrals to C.E.L. Paving")
+                
+                # Convert ObjectId to string for each referral
+                referrals_list = []
+                for referral in referrals:
+                    print(f"Found referral: {referral.get('from_business')} -> {referral.get('to_business')}")
+                    referral['_id'] = str(referral['_id'])
+                    if 'from_user_id' in referral and referral['from_user_id']:
+                        referral['from_user_id'] = str(referral['from_user_id'])
+                        # Get the sender's information
+                        from_user = get_user_by_id(referral['from_user_id'])
+                        if from_user:
+                            referral['from_user_name'] = f"{from_user['first_name']} {from_user['last_name']}"
+                            print(f"From user: {referral['from_user_name']}")
+                        else:
+                            referral['from_user_name'] = "Unknown"
+                            print("From user: Unknown")
+                    referrals_list.append(referral)
+                
+                print(f"Total referrals found: {len(referrals_list)}")    
+                return referrals_list
+        
+        # Business name mapping for known variations
+        business_name_mapping = {
+            "cel paving": "C.E.L. Paving",
+            "c.e.l paving": "C.E.L. Paving",
+            "c e l paving": "C.E.L. Paving",
+            "cel": "C.E.L. Paving",
+            "contemplation": "Contemplation Software",
+            "contemplation software": "Contemplation Software",
+            "matthew enslin": "Matthew Enslin Inc",
+            "enslin": "Matthew Enslin Inc"
+        }
+        
+        # Normalize the business name by trimming whitespace
+        normalized_business_name = business_name.strip()
+        simplified_name = normalized_business_name.lower().replace('.', '').replace('-', ' ')
+        
+        # Check if the business name matches any known variations
+        if simplified_name in business_name_mapping:
+            print(f"Found business name mapping: '{simplified_name}' -> '{business_name_mapping[simplified_name]}'")
+            normalized_business_name = business_name_mapping[simplified_name]
+        elif "cel" in simplified_name and "paving" in simplified_name:
+            print("Special case: Using 'C.E.L. Paving' as the business name")
+            normalized_business_name = "C.E.L. Paving"
+        
+        print(f"Normalized business name: '{normalized_business_name}'")
+        
+        # Find referrals where to_business matches the given business_name (exact match)
+        referrals = list(referrals_collection.find({"to_business": normalized_business_name}).sort("created_at", -1))
+        
+        # If no exact matches, try a case-insensitive search
+        if not referrals:
+            print(f"No exact matches, trying case-insensitive search")
+            # MongoDB regex for case-insensitive search
+            import re
+            case_insensitive_regex = re.compile(f"^{re.escape(normalized_business_name)}$", re.IGNORECASE)
+            referrals = list(referrals_collection.find({"to_business": case_insensitive_regex}).sort("created_at", -1))
+            
+            # If still no matches, try a partial match (contains search)
+            if not referrals:
+                print(f"No case-insensitive matches, trying partial match")
+                partial_match_regex = re.compile(f".*{re.escape(normalized_business_name)}.*", re.IGNORECASE)
+                referrals = list(referrals_collection.find({"to_business": partial_match_regex}).sort("created_at", -1))
+                
+                # If still no matches, try the other way around - check if any referral's to_business is contained in the user's business name
+                if not referrals:
+                    print(f"No partial matches, trying reverse partial match")
+                    # Get all unique to_business values
+                    all_to_businesses = referrals_collection.distinct("to_business")
+                    matching_referrals = []
+                    
+                    # Check each to_business to see if it's contained in the user's business name
+                    for to_business in all_to_businesses:
+                        to_business_simplified = to_business.lower().replace('.', '').replace('-', ' ')
+                        if to_business_simplified in simplified_name or simplified_name in to_business_simplified:
+                            print(f"Found reverse match: {to_business}")
+                            # Add all referrals with this to_business
+                            matching_referrals.extend(
+                                list(referrals_collection.find({"to_business": to_business}).sort("created_at", -1))
+                            )
+                    
+                    referrals = matching_referrals
+        
+        # Convert ObjectId to string for each referral
+        referrals_list = []
+        for referral in referrals:
+            print(f"Found referral: {referral.get('from_business')} -> {referral.get('to_business')}")
+            referral['_id'] = str(referral['_id'])
+            if 'from_user_id' in referral and referral['from_user_id']:
+                referral['from_user_id'] = str(referral['from_user_id'])
+                # Get the sender's information
+                from_user = get_user_by_id(referral['from_user_id'])
+                if from_user:
+                    referral['from_user_name'] = f"{from_user['first_name']} {from_user['last_name']}"
+                    print(f"From user: {referral['from_user_name']}")
+                else:
+                    referral['from_user_name'] = "Unknown"
+                    print("From user: Unknown")
+            referrals_list.append(referral)
+        
+        print(f"Total referrals found: {len(referrals_list)}")    
+        return referrals_list
+    except Exception as e:
+        print(f"Error getting referrals to business: {e}")
+        return []
