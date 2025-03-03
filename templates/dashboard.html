@@ -440,95 +440,97 @@
         </div>
         
         <!-- Referrals List Section -->
-        <div class="referrals-section received-referrals-section">
-            <h2>Accepted Referrals with Pending Deals</h2>
-            
-            {% if received_referrals %}
-                <div class="referrals-list">
-                    {% for referral in received_referrals %}
-                        <div class="referral-item received-referral" data-referral-id="{{ referral._id }}">
-                            <div class="referral-header">
-                                <h3>From: {{ referral.from_business }}</h3>
-                                <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
-                            </div>
-                            <p><strong>Contact:</strong> {{ referral.to_name }}</p>
-                            <p><strong>Info:</strong> {{ referral.contact_info }}</p>
-                            <p><strong>Date:</strong> {{ referral.referral_date }}</p>
-                            <div class="referral-status-controls">
-                                <div class="status-control">
-                                    <label for="accepted-{{ referral._id }}">Accepted:</label>
-                                    <select id="accepted-{{ referral._id }}" class="status-select" data-field="accept" data-referral-id="{{ referral._id }}">
-                                        <option value="false" {% if not referral.accept %}selected{% endif %}>No</option>
-                                        <option value="true" {% if referral.accept %}selected{% endif %}>Yes</option>
-                                    </select>
+        <div class="referrals-container">
+            <div class="referrals-section received-referrals-section">
+                <h2>Accepted Referrals with Pending Deals</h2>
+                
+                {% if received_referrals %}
+                    <div class="referrals-list">
+                        {% for referral in received_referrals %}
+                            <div class="referral-item received-referral" data-referral-id="{{ referral._id }}">
+                                <div class="referral-header">
+                                    <h3>From: {{ referral.from_business }}</h3>
+                                    <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
                                 </div>
-                                <div class="status-control">
-                                    <label for="contacted-{{ referral._id }}">Contacted:</label>
-                                    <select id="contacted-{{ referral._id }}" class="status-select" data-field="contacted" data-referral-id="{{ referral._id }}">
-                                        <option value="false" {% if not referral.contacted %}selected{% endif %}>No</option>
-                                        <option value="true" {% if referral.contacted %}selected{% endif %}>Yes</option>
-                                    </select>
-                                </div>
-                                <div class="status-control">
-                                    <label for="deal-{{ referral._id }}">Deal Status:</label>
-                                    <select id="deal-{{ referral._id }}" class="status-select" data-field="deal_accepted" data-referral-id="{{ referral._id }}">
-                                        <option value="Pending" {% if referral.deal_accepted == 'Pending' or not referral.deal_accepted %}selected{% endif %}>Pending</option>
-                                        <option value="Accepted" {% if referral.deal_accepted == 'Accepted' %}selected{% endif %}>Accepted</option>
-                                        <option value="Rejected" {% if referral.deal_accepted == 'Rejected' %}selected{% endif %}>Rejected</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="no-referrals">No referrals have been sent to you yet.</p>
-            {% endif %}
-        </div>
-        
-        <div class="referrals-section">
-            <h2>Your Referrals</h2>
-            
-            {% if referrals %}
-                <div class="referrals-list">
-                    {% for referral in referrals %}
-                        <div class="referral-item">
-                            <div class="referral-header">
-                                <h3>{{ referral.to_business }}</h3>
-                                <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
-                            </div>
-                            <div class="referral-details">
                                 <p><strong>Contact:</strong> {{ referral.to_name }}</p>
-                                <p><strong>Contact Info:</strong> {{ referral.contact_info }}</p>
+                                <p><strong>Info:</strong> {{ referral.contact_info }}</p>
                                 <p><strong>Date:</strong> {{ referral.referral_date }}</p>
-                                {% if referral.notes %}
-                                <p><strong>Notes:</strong> {{ referral.notes }}</p>
-                                {% endif %}
-                                <div class="referral-status-indicators">
-                                    <p>
-                                        <span class="status-indicator {% if referral.accept %}status-accepted{% else %}status-not-accepted{% endif %}">
-                                            {% if referral.accept %}Accepted{% else %}Not Accepted{% endif %}
-                                        </span>
-                                        <span class="status-indicator {% if referral.contacted %}status-contacted{% else %}status-not-contacted{% endif %}">
-                                            {% if referral.contacted %}Contacted{% else %}Not Contacted{% endif %}
-                                        </span>
-                                        <span class="status-indicator 
-                                            {% if referral.deal_accepted == 'Accepted' %}status-deal-accepted
-                                            {% elif referral.deal_accepted == 'Rejected' %}status-deal-rejected
-                                            {% else %}status-deal-pending{% endif %}">
-                                            Deal: {{ referral.deal_accepted }}
-                                        </span>
-                                    </p>
+                                <div class="referral-status-controls">
+                                    <div class="status-control">
+                                        <label for="accepted-{{ referral._id }}">Accepted:</label>
+                                        <select id="accepted-{{ referral._id }}" class="status-select" data-field="accept" data-referral-id="{{ referral._id }}">
+                                            <option value="false" {% if not referral.accept %}selected{% endif %}>No</option>
+                                            <option value="true" {% if referral.accept %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="status-control">
+                                        <label for="contacted-{{ referral._id }}">Contacted:</label>
+                                        <select id="contacted-{{ referral._id }}" class="status-select" data-field="contacted" data-referral-id="{{ referral._id }}">
+                                            <option value="false" {% if not referral.contacted %}selected{% endif %}>No</option>
+                                            <option value="true" {% if referral.contacted %}selected{% endif %}>Yes</option>
+                                        </select>
+                                    </div>
+                                    <div class="status-control">
+                                        <label for="deal-{{ referral._id }}">Deal Status:</label>
+                                        <select id="deal-{{ referral._id }}" class="status-select" data-field="deal_accepted" data-referral-id="{{ referral._id }}">
+                                            <option value="Pending" {% if referral.deal_accepted == 'Pending' or not referral.deal_accepted %}selected{% endif %}>Pending</option>
+                                            <option value="Accepted" {% if referral.deal_accepted == 'Accepted' %}selected{% endif %}>Accepted</option>
+                                            <option value="Rejected" {% if referral.deal_accepted == 'Rejected' %}selected{% endif %}>Rejected</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="no-referrals">
-                    <p>You haven't created any referrals yet.</p>
-                </div>
-            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-referrals">No referrals have been sent to you yet.</p>
+                {% endif %}
+            </div>
+            
+            <div class="referrals-section">
+                <h2>Your Referrals</h2>
+                
+                {% if referrals %}
+                    <div class="referrals-list">
+                        {% for referral in referrals %}
+                            <div class="referral-item">
+                                <div class="referral-header">
+                                    <h3>{{ referral.to_business }}</h3>
+                                    <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
+                                </div>
+                                <div class="referral-details">
+                                    <p><strong>Contact:</strong> {{ referral.to_name }}</p>
+                                    <p><strong>Contact Info:</strong> {{ referral.contact_info }}</p>
+                                    <p><strong>Date:</strong> {{ referral.referral_date }}</p>
+                                    {% if referral.notes %}
+                                    <p><strong>Notes:</strong> {{ referral.notes }}</p>
+                                    {% endif %}
+                                    <div class="referral-status-indicators">
+                                        <p>
+                                            <span class="status-indicator {% if referral.accept %}status-accepted{% else %}status-not-accepted{% endif %}">
+                                                {% if referral.accept %}Accepted{% else %}Not Accepted{% endif %}
+                                            </span>
+                                            <span class="status-indicator {% if referral.contacted %}status-contacted{% else %}status-not-contacted{% endif %}">
+                                                {% if referral.contacted %}Contacted{% else %}Not Contacted{% endif %}
+                                            </span>
+                                            <span class="status-indicator 
+                                                {% if referral.deal_accepted == 'Accepted' %}status-deal-accepted
+                                                {% elif referral.deal_accepted == 'Rejected' %}status-deal-rejected
+                                                {% else %}status-deal-pending{% endif %}">
+                                                Deal: {{ referral.deal_accepted }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-referrals">
+                        <p>You haven't created any referrals yet.</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
     
@@ -587,33 +589,29 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || '',
-                            'X-Requested-With': 'XMLHttpRequest'
+                            'X-CSRFToken': csrfToken
                         },
                         body: JSON.stringify({
                             referral_id: referralId,
                             field: field,
                             value: value
-                        }),
-                        credentials: 'same-origin' // Include cookies in the request
+                        })
                     })
                     .then(response => response.json())
                     .then(data => {
+                        console.log('Success:', data);
                         if (data.success) {
-                            // Show success notification
-                            alert('Status updated successfully!');
+                            // Refresh the entire page to ensure 100% current data
+                            console.log('Refreshing entire page...');
+                            window.location.reload();
                         } else {
-                            // Show error notification
+                            console.error('Error updating status:', data.error);
                             alert('Error updating status: ' + data.error);
-                            // Reset the select to its previous value
-                            this.value = this.getAttribute('data-previous-value');
                         }
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         console.error('Error:', error);
-                        alert('An error occurred while updating the status.');
-                        // Reset the select to its previous value
-                        this.value = this.getAttribute('data-previous-value');
+                        alert('Error updating status. Please try again.');
                     });
                     
                     // Store the current value as previous value for potential rollback

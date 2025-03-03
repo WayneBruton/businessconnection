@@ -73,6 +73,79 @@ def ensure_deal_status(referrals):
             referral['deal_accepted'] = 'Pending'
     return referrals
 
+def send_webhook_notification(referral, field, value):
+    """Send a webhook notification for a referral status update."""
+    if not referral:
+        print("Cannot send webhook notification: Referral is None")
+        return
+    
+    # Prepare data for webhook
+    serializable_referral = serialize_mongodb_doc(referral)
+    
+    # Get the referrer and referee information
+    referrer_user = get_user_by_id(referral['from_user_id'])
+    referree_user = get_user_by_business_name(referral['to_business'])
+    
+    if referrer_user:
+        serializable_referral['referrer'] = serialize_mongodb_doc(referrer_user)
+    
+    if referree_user:
+        serializable_referral['referree'] = serialize_mongodb_doc(referree_user)
+    
+    # Add status update information
+    serializable_referral['status_update'] = {
+        'field': field,
+        'value': value,
+        'updated_at': datetime.now().isoformat()
+    }
+    
+    # Send webhook notification
+    url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
+    try:
+        import json
+        print("\n==== WEBHOOK PAYLOAD ====")
+        payload_json = json.dumps(serializable_referral, indent=2)
+        print(payload_json)
+        print("=========================\n")
+        
+        # Add timeout to prevent hanging
+        print(f"Sending webhook request to: {url}")
+        
+        # Send the webhook request with timeout
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'BusinessConnectionReferral/1.0'
+        }
+        response = requests.post(
+            url, 
+            json=serializable_referral,
+            headers=headers,
+            timeout=10  # 10 second timeout
+        )
+        
+        print(f"Webhook response status: {response.status_code}")
+        print(f"Webhook response headers: {response.headers}")
+        print(f"Webhook response text: {response.text}")
+        
+        # Check if response is successful
+        if response.status_code >= 200 and response.status_code < 300:
+            print("Webhook notification sent successfully")
+            return True
+        else:
+            print(f"Webhook notification failed with status code: {response.status_code}")
+            return False
+    except requests.exceptions.Timeout:
+        print("Webhook request timed out after 10 seconds")
+    except requests.exceptions.RequestException as e:
+        print(f"Webhook request error: {e}")
+    except Exception as e:
+        print(f"Error sending webhook notification: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+    
+    return False
+
 @app.route('/')
 def index():
     # Check if user is logged in via session
@@ -340,18 +413,9 @@ def dashboard():
             if referree_user:
                 serializable_referral['referree'] = serialize_mongodb_doc(referree_user)
             
-            url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
-            # call the webhook and send the referral data
+            # Send webhook notification
             try:
-                import json
-                print("==== WEBHOOK PAYLOAD ====")
-                print(json.dumps(serializable_referral, indent=2))
-                print("=========================")
-                
-                # Send the webhook request
-                response = requests.post(url, json=serializable_referral)
-                print(f"Webhook response status: {response.status_code}")
-                print(f"Webhook response text: {response.text}")
+                send_webhook_notification(serializable_referral, 'created', True)
             except Exception as e:
                 print(f"Error sending webhook notification: {e}")
             
@@ -372,6 +436,71 @@ def dashboard():
         now=now, 
         csrf_token=csrf_token
     )
+
+@app.route('/refresh_referrals')
+@login_required
+def refresh_referrals():
+    """Return the HTML for the referrals section."""
+    # Get the current user
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'User not found'}), 401
+    
+    # Get the user's referrals
+    referrals = get_referrals_by_user_id(user['_id'])
+    
+    # Get referrals sent to the user's business
+    user_business = user.get('business_name', '')
+    all_received_referrals = get_referrals_by_to_business(user_business)
+    
+    # Debug: Print all received referrals before filtering
+    print("\n----- ALL RECEIVED REFERRALS BEFORE REFRESHING -----")
+    for i, ref in enumerate(all_received_referrals):
+        print(f"Referral {i+1}: From {ref.get('from_business', 'Unknown')} to {ref.get('to_business', 'Unknown')}")
+        print(f"  - ID: {ref.get('_id')}")
+        print(f"  - Accept: {ref.get('accept')} (Type: {type(ref.get('accept')).__name__})")
+        print(f"  - Deal Status: {ref.get('deal_accepted')} (Type: {type(ref.get('deal_accepted')).__name__})")
+    print("-----------------------------------------------------\n")
+    
+    # Ensure all referrals have a deal_accepted value
+    all_received_referrals = ensure_deal_status(all_received_referrals)
+    
+    # Filter referrals to only show where accept=True and deal_accepted is "Pending"
+    received_referrals = []
+    for ref in all_received_referrals:
+        accept_value = ref.get('accept')
+        deal_status = ref.get('deal_accepted')
+        
+        print(f"Checking referral {ref.get('_id')}: accept={accept_value}, deal_accepted={deal_status}")
+        
+        # Check if accept is True (could be boolean True or string "true")
+        is_accepted = accept_value is True or (isinstance(accept_value, str) and accept_value.lower() == "true")
+        
+        # Check if deal_accepted is "Pending"
+        is_pending = deal_status == "Pending" or not deal_status
+        
+        print(f"  - is_accepted: {is_accepted}, is_pending: {is_pending}")
+        
+        if is_accepted and is_pending:
+            print(f"  - ADDING TO FILTERED LIST")
+            received_referrals.append(ref)
+        else:
+            print(f"  - NOT ADDING TO FILTERED LIST")
+    
+    print(f"Filtered received referrals count: {len(received_referrals)}")
+    
+    # Check if this is an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Render just the referrals section template
+        return render_template(
+            'referrals_section.html',
+            user=user,
+            referrals=referrals,
+            received_referrals=received_referrals
+        )
+    
+    # If not an AJAX request, redirect to dashboard
+    return redirect(url_for('dashboard'))
 
 @app.route('/update_referral_status', methods=['POST'])
 @csrf.exempt
@@ -433,40 +562,7 @@ def update_referral_status():
             # Send webhook notification for the status update
             referral = get_referral_by_id(referral_id)
             if referral:
-                # Prepare data for webhook
-                serializable_referral = serialize_mongodb_doc(referral)
-                
-                # Get the referrer and referee information
-                referrer_user = get_user_by_id(referral['from_user_id'])
-                referree_user = get_user_by_business_name(referral['to_business'])
-                
-                if referrer_user:
-                    serializable_referral['referrer'] = serialize_mongodb_doc(referrer_user)
-                
-                if referree_user:
-                    serializable_referral['referree'] = serialize_mongodb_doc(referree_user)
-                
-                # Add status update information
-                serializable_referral['status_update'] = {
-                    'field': field,
-                    'value': value,
-                    'updated_at': datetime.now().isoformat()
-                }
-                
-                # Send webhook notification
-                url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
-                try:
-                    import json
-                    print("==== WEBHOOK PAYLOAD ====")
-                    print(json.dumps(serializable_referral, indent=2))
-                    print("=========================")
-                    
-                    # Send the webhook request
-                    response = requests.post(url, json=serializable_referral)
-                    print(f"Webhook response status: {response.status_code}")
-                    print(f"Webhook response text: {response.text}")
-                except Exception as e:
-                    print(f"Error sending webhook notification: {e}")
+                send_webhook_notification(referral, field, value)
             
             return jsonify({'success': True})
         else:
