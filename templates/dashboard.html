@@ -456,6 +456,9 @@
                                 <p><strong>Contact:</strong> {{ referral.to_name }}</p>
                                 <p><strong>Info:</strong> {{ referral.contact_info }}</p>
                                 <p><strong>Date:</strong> {{ referral.referral_date }}</p>
+                                {% if referral.notes %}
+                                <p><strong>Notes:</strong> {{ referral.notes }}</p>
+                                {% endif %}
                                 <div class="referral-status-controls">
                                     <div class="status-control">
                                         <label for="accepted-{{ referral._id }}">Accepted:</label>

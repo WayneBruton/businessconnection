@@ -134,14 +134,12 @@
         <form method="POST" action="{{ url_for('edit_user', user_id=form.user_id.data) }}">
             {{ form.csrf_token }}
             {{ form.user_id(id="user_id") }}
+            <input type="hidden" name="business_name_hidden" id="hidden_business_name" value="{{ form.business_name.data }}">
             
             <div class="form-group">
-                <label for="business_name">Select User</label>
-                <!--  deactivate the dropdown and make it read only -->
-                  <!-- It still shows up in the dropdown, but it's read only. -->
-
-
+                <label for="business_name">Business Name (Read-only)</label>
                 {{ form.business_name(class="form-control", id="business_name_select", readonly=True, disabled=True) }}
+                <small class="form-text text-muted">Business name cannot be changed.</small>
                 {% if form.business_name.errors %}
                     {% for error in form.business_name.errors %}
                         <div class="error-message">{{ error }}</div>
@@ -277,6 +275,11 @@
                                     document.getElementById('email').value = data.user.email;
                                     document.getElementById('first_name').value = data.user.first_name;
                                     document.getElementById('last_name').value = data.user.last_name;
+                                    
+                                    // Update hidden business_name field
+                                    if (document.getElementById('hidden_business_name')) {
+                                        document.getElementById('hidden_business_name').value = data.user.business_name;
+                                    }
                                     
                                     // Handle phone numbers which might be null or undefined
                                     if (data.user.mobile_number) {

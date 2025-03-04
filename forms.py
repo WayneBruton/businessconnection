@@ -76,9 +76,7 @@ class EditUserForm(FlaskForm):
         DataRequired(message="Last name is required"),
         Length(min=2, max=50, message="Last name must be between 2 and 50 characters")
     ])
-    business_name = SelectField('Business Name', validators=[
-        DataRequired(message="Business name is required")
-    ])
+    business_name = SelectField('Business Name')
     mobile_number = StringField('Mobile Number', validators=[
         Length(max=20, message="Mobile number must be less than 20 characters")
     ])
@@ -94,6 +92,12 @@ class EditUserForm(FlaskForm):
         if not field.data:
             field.errors = []
             return False
+        return True
+        
+    def validate_business_name(self, field):
+        # Skip validation for business_name since it's disabled in the form
+        # and we're handling it separately in the route
+        field.errors = []
         return True
 
 class ReferralForm(FlaskForm):

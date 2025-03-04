@@ -494,12 +494,15 @@ def edit_user(user_id=None):
             flash('User not found.', 'error')
             return redirect(url_for('admin_dashboard'))
         
+        # Always use the existing business_name from the database
+        business_name = user_to_update.get('business_name')
+        
         # Prepare update data
         update_data = {
             'email': form.email.data,
             'first_name': form.first_name.data,
             'last_name': form.last_name.data,
-            'business_name': form.business_name.data,
+            'business_name': business_name,  # Always use existing business_name
             'mobile_number': form.mobile_number.data,
             'office_number': form.office_number.data,
             'enabled': form.enabled.data,
