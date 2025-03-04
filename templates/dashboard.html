@@ -327,6 +327,7 @@
     </style>
 </head>
 <body>
+    {% block content %}
     <div class="dashboard-container">
         <div class="header-section">
             <h1>Welcome, {{ user.first_name }} {{ user.last_name }}</h1>
@@ -533,6 +534,7 @@
             </div>
         </div>
     </div>
+    {% endblock %}
     
     <script>
         // Check if there's a success flash message and clear form fields

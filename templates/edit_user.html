@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User - Business Connection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/input-mask.js') }}"></script>
+    <style>
+        .edit-user-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .edit-user-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .edit-user-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .edit-user-header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-group label {
+            margin-left: 10px;
+            margin-bottom: 0;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .password-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .edit-user-container {
+                padding: 20px;
+                margin: 0 15px;
+            }
+            
+            .edit-user-header h1 {
+                font-size: 24px;
+            }
+            
+            .form-control {
+                padding: 12px 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="edit-user-container">
+        <div class="edit-user-header">
+            <h1>Edit User</h1>
+            <p>Update user information</p>
+        </div>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('edit_user', user_id=form.user_id.data) }}">
+            {{ form.csrf_token }}
+            {{ form.user_id(id="user_id") }}
+            
+            <div class="form-group">
+                <label for="business_name">Select User</label>
+                <!--  deactivate the dropdown and make it read only -->
+                  <!-- It still shows up in the dropdown, but it's read only. -->
+
+
+                {{ form.business_name(class="form-control", id="business_name_select", readonly=True, disabled=True) }}
+                {% if form.business_name.errors %}
+                    {% for error in form.business_name.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                {{ form.email(class="form-control", placeholder="Enter email", id="email") }}
+                {% if form.email.errors %}
+                    {% for error in form.email.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="password">New Password</label>
+                {{ form.password(class="form-control", placeholder="Enter new password", id="password") }}
+                <div class="password-info">Leave blank to keep current password</div>
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                {{ form.confirm_password(class="form-control", placeholder="Confirm new password", id="confirm_password") }}
+                {% if form.confirm_password.errors %}
+                    {% for error in form.confirm_password.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="first_name">First Name</label>
+                {{ form.first_name(class="form-control", placeholder="Enter first name", id="first_name") }}
+                {% if form.first_name.errors %}
+                    {% for error in form.first_name.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="last_name">Last Name</label>
+                {{ form.last_name(class="form-control", placeholder="Enter last name", id="last_name") }}
+                {% if form.last_name.errors %}
+                    {% for error in form.last_name.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="mobile_number">Mobile Number</label>
+                {{ form.mobile_number(class="form-control phone-input", placeholder="(###) ###-####", id="mobile_number") }}
+                {% if form.mobile_number.errors %}
+                    {% for error in form.mobile_number.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="office_number">Office Number</label>
+                {{ form.office_number(class="form-control phone-input", placeholder="(###) ###-####", id="office_number") }}
+                {% if form.office_number.errors %}
+                    {% for error in form.office_number.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group checkbox-group">
+                {{ form.enabled(class="form-checkbox", id="enabled") }}
+                <label for="enabled">Enable Account</label>
+                {% if form.enabled.errors %}
+                    {% for error in form.enabled.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group checkbox-group">
+                {{ form.notify(class="form-checkbox", id="notify") }}
+                <label for="notify">Receive Notifications</label>
+                {% if form.notify.errors %}
+                    {% for error in form.notify.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+        
+        <a href="{{ url_for('admin_dashboard') }}" class="back-link">Back to Admin Dashboard</a>
+    </div>
+    
+    <script>
+        // Apply phone input mask to phone fields
+        document.addEventListener('DOMContentLoaded', function() {
+            var phoneInputs = document.querySelectorAll('.phone-input');
+            phoneInputs.forEach(function(input) {
+                new IMask(input, {
+                    mask: '(000) 000-0000'
+                });
+            });
+            
+            // Add event listener to business_name select
+            var businessSelect = document.getElementById('business_name_select');
+            if (businessSelect) {
+                businessSelect.addEventListener('change', function() {
+                    if (this.value) {
+                        fetch('/get_user_data/' + encodeURIComponent(this.value))
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    // Populate form fields with user data
+                                    document.getElementById('user_id').value = data.user._id;
+                                    document.getElementById('email').value = data.user.email;
+                                    document.getElementById('first_name').value = data.user.first_name;
+                                    document.getElementById('last_name').value = data.user.last_name;
+                                    
+                                    // Handle phone numbers which might be null or undefined
+                                    if (data.user.mobile_number) {
+                                        document.getElementById('mobile_number').value = data.user.mobile_number;
+                                    } else {
+                                        document.getElementById('mobile_number').value = '';
+                                    }
+                                    
+                                    if (data.user.office_number) {
+                                        document.getElementById('office_number').value = data.user.office_number;
+                                    } else {
+                                        document.getElementById('office_number').value = '';
+                                    }
+                                    
+                                    // Handle checkboxes
+                                    document.getElementById('enabled').checked = data.user.enabled;
+                                    document.getElementById('notify').checked = data.user.notify;
+                                    
+                                    // Clear password fields
+                                    document.getElementById('password').value = '';
+                                    document.getElementById('confirm_password').value = '';
+                                } else {
+                                    console.error('Error fetching user data:', data.error);
+                                    alert('Error fetching user data: ' + data.error);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error fetching user data:', error);
+                                alert('Error fetching user data. Please try again.');
+                            });
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -194,10 +194,11 @@
                 {{ form.submit(class="btn btn-primary") }}
             </div>
             
-            <div style="text-align: center; margin-top: 15px;">
+            <!-- <div style="text-align: center; margin-top: 15px;">
                 <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
-            </div>
+            </div> -->
         </form>
+         <a href="{{ url_for('admin_dashboard') }}" class="back-link">Back to Admin Dashboard</a>
     </div>
     
     <script>

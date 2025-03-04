@@ -3,7 +3,7 @@ from flask import Flask, render_template, redirect, url_for, flash, request, ses
 from functools import wraps
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from dotenv import load_dotenv
-from forms import LoginForm, RegistrationForm, ReferralForm
+from forms import LoginForm, RegistrationForm, ReferralForm, EditUserForm
 from database import (
     create_user, get_user_by_email, verify_password, 
     generate_jwt_token, decode_jwt_token, get_user_by_id,
@@ -14,6 +14,7 @@ from database import (
 from datetime import datetime
 import requests 
 from bson import ObjectId
+from werkzeug.security import generate_password_hash
 
 # Load environment variables
 load_dotenv()
@@ -146,6 +147,15 @@ def send_webhook_notification(referral, field, value):
     
     return False
 
+def get_all_users():
+    """Get all users from the database."""
+    try:
+        users = list(users_collection.find())
+        return users
+    except Exception as e:
+        print(f"Error getting all users: {e}")
+        return []
+
 @app.route('/')
 def index():
     # Check if user is logged in via session
@@ -212,22 +222,20 @@ def login():
     return render_template('login.html', form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
+@login_required
 def register():
-    # If user is already logged in, redirect to dashboard
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
+    # Get user information
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
     
-    # Check if user has a valid JWT token in cookies
-    token = request.cookies.get('jwt_token')
-    if token:
-        user_id = decode_jwt_token(token)
-        if user_id:
-            # Valid token, set session and redirect to dashboard
-            user = get_user_by_id(user_id)
-            if user:
-                session['user_id'] = user_id
-                session['email'] = user['email']
-                return redirect(url_for('dashboard'))
+    if not user:
+        # If user not found, log them out
+        return redirect(url_for('logout'))
+    
+    # Only allow Admin users to access the registration page
+    if user['business_name'] != 'Admin':
+        flash('You do not have permission to access the registration page', 'error')
+        return redirect(url_for('dashboard'))
     
     form = RegistrationForm()
     
@@ -255,8 +263,8 @@ def register():
         )
         
         if user_id:
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
+            flash('User registration successful!', 'success')
+            return redirect(url_for('admin_dashboard'))
         else:
             flash('Registration failed. Please try again.', 'error')
     
@@ -273,6 +281,10 @@ def dashboard():
     if not user:
         # If user not found, log them out
         return redirect(url_for('logout'))
+    
+    # If the user is Admin, redirect to admin dashboard
+    if user['business_name'] == 'Admin':
+        return redirect(url_for('admin_dashboard'))
     
     print(f"Request method: {request.method}")
     
@@ -398,7 +410,7 @@ def dashboard():
             referral = get_referral_by_id(referral_id)
             # print(f"Referral: {referral}")
             
-            # Get the referrer referree information
+            # Get the referrer and referee information
             referrer_user = get_user_by_id(referral['from_user_id'])
             referree_user = get_user_by_business_name(referral['to_business'])
             # print(f"ReferrerXXXX: {referrer_user}")
@@ -436,6 +448,124 @@ def dashboard():
         now=now, 
         csrf_token=csrf_token
     )
+
+@app.route('/admin_dashboard')
+@login_required
+def admin_dashboard():
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Check if user is an Admin
+    if not user or user.get('business_name') != 'Admin':
+        flash('Access denied. You must be an Admin to view this page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Get all users for the admin dashboard
+    all_users = get_all_users()
+    
+    return render_template('admin_dashboard.html', user=user, all_users=all_users)
+
+@app.route('/edit_user/<user_id>', methods=['GET', 'POST'])
+@app.route('/edit_user', methods=['GET', 'POST'])
+@login_required
+def edit_user(user_id=None):
+    admin_user_id = session.get('user_id')
+    admin_user = get_user_by_id(admin_user_id)
+    
+    # Check if user is an Admin
+    if not admin_user or admin_user.get('business_name') != 'Admin':
+        flash('Access denied. You must be an Admin to edit users.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Get all business names for the dropdown
+    all_users = get_all_users()
+    business_choices = [(user.get('business_name'), user.get('business_name')) for user in all_users]
+    
+    form = EditUserForm()
+    form.business_name.choices = business_choices
+    
+    # If form is submitted
+    if form.validate_on_submit():
+        user_id = form.user_id.data
+        
+        # Get the user to update
+        user_to_update = get_user_by_id(user_id)
+        if not user_to_update:
+            flash('User not found.', 'error')
+            return redirect(url_for('admin_dashboard'))
+        
+        # Prepare update data
+        update_data = {
+            'email': form.email.data,
+            'first_name': form.first_name.data,
+            'last_name': form.last_name.data,
+            'business_name': form.business_name.data,
+            'mobile_number': form.mobile_number.data,
+            'office_number': form.office_number.data,
+            'enabled': form.enabled.data,
+            'notify': form.notify.data
+        }
+        
+        # Update password if provided and not empty
+        if form.password.data and form.password.data.strip():
+            update_data['password'] = generate_password_hash(form.password.data)
+        
+        # Update user in database
+        try:
+            users_collection.update_one(
+                {'_id': ObjectId(user_id)},
+                {'$set': update_data}
+            )
+            flash('User updated successfully.', 'success')
+            return redirect(url_for('admin_dashboard'))
+        except Exception as e:
+            flash(f'Error updating user: {str(e)}', 'error')
+    
+    # If user_id is provided, populate form with user data
+    if user_id:
+        user_to_edit = get_user_by_id(user_id)
+        if user_to_edit:
+            form.user_id.data = str(user_to_edit.get('_id'))
+            form.email.data = user_to_edit.get('email')
+            form.first_name.data = user_to_edit.get('first_name')
+            form.last_name.data = user_to_edit.get('last_name')
+            form.business_name.data = user_to_edit.get('business_name')
+            form.mobile_number.data = user_to_edit.get('mobile_number', '')
+            form.office_number.data = user_to_edit.get('office_number', '')
+            form.enabled.data = user_to_edit.get('enabled', True)
+            form.notify.data = user_to_edit.get('notify', True)
+    
+    return render_template('edit_user.html', form=form)
+
+@app.route('/get_user_data/<business_name>')
+@login_required
+def get_user_data(business_name):
+    admin_user_id = session.get('user_id')
+    admin_user = get_user_by_id(admin_user_id)
+    
+    # Check if user is an Admin
+    if not admin_user or admin_user.get('business_name') != 'Admin':
+        return jsonify({'success': False, 'error': 'Access denied. Admin only.'}), 403
+    
+    # Get user by business name
+    user = get_user_by_business_name(business_name)
+    if not user:
+        return jsonify({'success': False, 'error': 'User not found.'}), 404
+    
+    # Prepare user data for JSON response
+    user_data = {
+        '_id': str(user.get('_id')),
+        'email': user.get('email'),
+        'first_name': user.get('first_name'),
+        'last_name': user.get('last_name'),
+        'business_name': user.get('business_name'),
+        'mobile_number': user.get('mobile_number', ''),
+        'office_number': user.get('office_number', ''),
+        'enabled': user.get('enabled', True),
+        'notify': user.get('notify', True)
+    }
+    
+    return jsonify({'success': True, 'user': user_data})
 
 @app.route('/refresh_referrals')
 @login_required
