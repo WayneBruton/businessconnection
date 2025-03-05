@@ -102,6 +102,7 @@ def send_webhook_notification(referral, field, value):
     
     # Send webhook notification
     url = "https://automation-contemplation.onrender.com/webhook/tbcrefs"
+    # url = "https://automation-contemplation.onrender.com/webhook-test/tbcrefs"
     try:
         import json
         print("\n==== WEBHOOK PAYLOAD ====")
@@ -417,6 +418,8 @@ def dashboard():
             # print(f"ReferreeYYYY: {referree_user}")
             # Convert MongoDB document to JSON-serializable dict using the helper function
             serializable_referral = serialize_mongodb_doc(referral)
+            # add new in field 
+            serializable_referral['transaction_status'] = "New"
             
             # Also add the referrer and referee information - make sure they're serializable
             if referrer_user:
@@ -694,6 +697,8 @@ def update_referral_status():
         if result.modified_count > 0:
             # Send webhook notification for the status update
             referral = get_referral_by_id(referral_id)
+            # add modifed as transaction_status to referral
+            referral['transaction_status'] = "modified"
             if referral:
                 send_webhook_notification(referral, field, value)
             
