@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, DateField, TextAreaField, HiddenField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, SelectField, DateField, TextAreaField, HiddenField, RadioField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
 from database import get_user_by_email
 
@@ -107,6 +107,9 @@ class ReferralForm(FlaskForm):
         DataRequired(message="Business is required")
     ])
     referral_date = DateField('Referral Date', render_kw={'readonly': True})
+    referral_type = RadioField('Referral Type', choices=[('internal', 'Internal'), ('external', 'External')], validators=[
+        DataRequired(message="Please select a referral type")
+    ])
     to_name = StringField('Referral Person Name', validators=[
         DataRequired(message="Referral person name is required"),
         Length(min=2, max=100, message="Name must be between 2 and 100 characters")

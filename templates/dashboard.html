@@ -324,13 +324,34 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        /* Radio Button Styles */
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+        
+        .radio-input {
+            margin-right: 5px;
+        }
+        
+        .radio-label {
+            font-weight: 500;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
     {% block content %}
     <div class="dashboard-container">
         <div class="header-section">
-            <h1>Welcome, {{ user.first_name }} {{ user.last_name }}</h1>
+            <h1>Welcome, {{ user.first_name }}</h1>
             <a href="{{ url_for('logout') }}"><button class="logout-btn">Logout</button></a>
         </div>
         
@@ -402,6 +423,23 @@
                             </div>
                             
                             <div class="form-group">
+                                <label>Referral Type</label>
+                                <div class="radio-group">
+                                    {% for subfield in referral_form.referral_type %}
+                                        <div class="radio-option">
+                                            {{ subfield(class="radio-input") }}
+                                            {{ subfield.label(class="radio-label") }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if referral_form.referral_type.errors %}
+                                    {% for error in referral_form.referral_type.errors %}
+                                        <div class="error-message">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
                                 <label for="to_name">Referral Person Name</label>
                                 {{ referral_form.to_name(class="form-control", placeholder="Enter referral person's name") }}
                                 {% if referral_form.to_name.errors %}
@@ -443,7 +481,7 @@
         <!-- Referrals List Section -->
         <div class="referrals-container">
             <div class="referrals-section received-referrals-section">
-                <h2>Accepted Referrals with Pending Deals</h2>
+                <h2>Pending Referrals</h2>
                 
                 {% if received_referrals %}
                     <div class="referrals-list">
@@ -451,10 +489,17 @@
                             <div class="referral-item received-referral" data-referral-id="{{ referral._id }}">
                                 <div class="referral-header">
                                     <h3>From: {{ referral.from_business }}</h3>
-                                    <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
                                 </div>
                                 <p><strong>Contact:</strong> {{ referral.to_name }}</p>
-                                <p><strong>Info:</strong> {{ referral.contact_info }}</p>
+                                <p><strong>Info:</strong> 
+                                {% if referral.contact_info|is_email %}
+                                    <a href="mailto:{{ referral.contact_info }}">{{ referral.contact_info }}</a>
+                                {% elif referral.contact_info|is_phone %}
+                                    <a href="tel:{{ referral.contact_info|format_phone_for_tel }}">{{ referral.contact_info }}</a>
+                                {% else %}
+                                    {{ referral.contact_info }}
+                                {% endif %}
+                                </p>
                                 <p><strong>Date:</strong> {{ referral.referral_date }}</p>
                                 {% if referral.notes %}
                                 <p><strong>Notes:</strong> {{ referral.notes }}</p>
@@ -500,11 +545,18 @@
                             <div class="referral-item">
                                 <div class="referral-header">
                                     <h3>{{ referral.to_business }}</h3>
-                                    <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
                                 </div>
                                 <div class="referral-details">
                                     <p><strong>Contact:</strong> {{ referral.to_name }}</p>
-                                    <p><strong>Contact Info:</strong> {{ referral.contact_info }}</p>
+                                    <p><strong>Contact Info:</strong> 
+                                    {% if referral.contact_info|is_email %}
+                                        <a href="mailto:{{ referral.contact_info }}">{{ referral.contact_info }}</a>
+                                    {% elif referral.contact_info|is_phone %}
+                                        <a href="tel:{{ referral.contact_info|format_phone_for_tel }}">{{ referral.contact_info }}</a>
+                                    {% else %}
+                                        {{ referral.contact_info }}
+                                    {% endif %}
+                                    </p>
                                     <p><strong>Date:</strong> {{ referral.referral_date }}</p>
                                     {% if referral.notes %}
                                     <p><strong>Notes:</strong> {{ referral.notes }}</p>

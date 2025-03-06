@@ -22,6 +22,24 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'default-secret-key')
 
+# Custom Jinja2 filters
+def is_email(value):
+    return '@' in value
+
+def is_phone(value):
+    # Remove all non-numeric characters
+    digits_only = ''.join(c for c in value if c.isdigit())
+    # Check if we have at least 7 digits (minimum for a phone number)
+    return len(digits_only) >= 7
+
+def format_phone_for_tel(value):
+    # Remove spaces, dashes, parentheses, etc. for tel: link
+    return ''.join(c for c in value if c.isdigit() or c == '+')
+
+app.jinja_env.filters['is_email'] = is_email
+app.jinja_env.filters['is_phone'] = is_phone
+app.jinja_env.filters['format_phone_for_tel'] = format_phone_for_tel
+
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 
@@ -296,8 +314,8 @@ def dashboard():
     all_users = get_all_enabled_notifiable_users()
     # Filter out the current user and prepare choices
     business_choices = [(str(u['_id']), f"{u['business_name']} ({u['first_name']} {u['last_name']})") for u in all_users if str(u['_id']) != user_id]
-    # Sort choices alphabetically by business name
-    business_choices.sort(key=lambda x: x[1])
+    # Sort choices alphabetically by first name
+    business_choices.sort(key=lambda x: x[1].split('(')[1].split()[0])
     
     # Set the choices for the dropdown
     referral_form.to_business.choices = business_choices
@@ -399,7 +417,8 @@ def dashboard():
             contact_info=referral_form.contact_info.data,
             referral_date=referral_form.referral_date.data,
             notes=referral_form.notes.data,
-            from_user_id=user_id
+            from_user_id=user_id,
+            referral_type=referral_form.referral_type.data
         )
         
         print(f"Referral created with ID: {referral_id}")

@@ -401,6 +401,49 @@ select.form-control:focus {
     color: #6c757d;
 }
 
+/* Status dropdown controls styling */
+.referral-status-controls {
+    margin-top: 25px;
+}
+
+.status-control {
+    margin-bottom: 25px;
+}
+
+.status-control:last-child {
+    margin-bottom: 15px;
+}
+
+.status-control label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.status-select {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    background-color: #f9f9f9;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23555' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.status-select:focus {
+    border-color: #4a90e2;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    outline: none;
+}
+
 /* Responsive adjustments */
 @media (max-width: 480px) {
     .container {

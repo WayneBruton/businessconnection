@@ -116,10 +116,11 @@ def decode_jwt_token(token):
     except jwt.InvalidTokenError:
         return None  # Invalid token
 
-def create_referral(from_business, to_business, to_name, contact_info, referral_date, notes, status="pending", from_user_id=None):
+def create_referral(from_business, to_business, to_name, contact_info, referral_date, notes, status="pending", from_user_id=None, referral_type=None):
     """Create a new referral."""
     print(f"Creating referral in database: from {from_business} to {to_business}")
     print(f"from_user_id: {from_user_id}")
+    print(f"referral_type: {referral_type}")
     
     try:
         # Convert date object to string in ISO format
@@ -137,6 +138,7 @@ def create_referral(from_business, to_business, to_name, contact_info, referral_
             "notes": notes,
             "status": status,
             "from_user_id": from_user_id,
+            "referral_type": referral_type,  # New field: Whether the referral is internal or external
             "created_at": datetime.now(),
             "accept": True,          # New field: Whether the business accepts the referral
             "contacted": False,      # New field: Whether the business has contacted the referral
