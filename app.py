@@ -36,9 +36,25 @@ def format_phone_for_tel(value):
     # Remove spaces, dashes, parentheses, etc. for tel: link
     return ''.join(c for c in value if c.isdigit() or c == '+')
 
+def format_phone_for_whatsapp(value):
+    # Format phone number for WhatsApp
+    # Remove all non-digit characters except the plus sign
+    cleaned = ''.join(c for c in value if c.isdigit() or c == '+')
+    # If the number starts with a plus sign, keep it as is
+    # Otherwise, assume it's a local number and needs country code
+    if cleaned.startswith('+'):
+        return cleaned
+    # If no country code, assume South Africa (+27)
+    # and remove leading 0 if present
+    elif cleaned.startswith('0'):
+        return '+27' + cleaned[1:]
+    else:
+        return '+27' + cleaned
+
 app.jinja_env.filters['is_email'] = is_email
 app.jinja_env.filters['is_phone'] = is_phone
 app.jinja_env.filters['format_phone_for_tel'] = format_phone_for_tel
+app.jinja_env.filters['format_phone_for_whatsapp'] = format_phone_for_whatsapp
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
