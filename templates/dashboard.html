@@ -564,7 +564,7 @@
                                                 <i class="fas fa-phone contact-info-icon"></i>
                                                 Call
                                             </a>
-                                            <a href="https://wa.me/{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link" target="_blank">
+                                            <a href="https://wa.me/{{ referral.contact_info|format_phone_for_tel|replace('+', '') }}" class="contact-info-link" target="_blank">
                                                 <i class="fab fa-whatsapp contact-info-icon"></i>
                                                 WhatsApp
                                             </a>
@@ -634,7 +634,7 @@
                                                     <i class="fas fa-phone contact-info-icon"></i>
                                                     Call
                                                 </a>
-                                                <a href="https://wa.me/{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link" target="_blank">
+                                                <a href="https://wa.me/{{ referral.contact_info|format_phone_for_tel|replace('+', '') }}" class="contact-info-link" target="_blank">
                                                     <i class="fab fa-whatsapp contact-info-icon"></i>
                                                     WhatsApp
                                                 </a>
