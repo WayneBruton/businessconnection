@@ -108,5 +108,29 @@
             </div> -->
         </form>
     </div>
+
+    <script>
+        // Refresh CSRF token every 20 minutes to prevent expiration
+        function refreshCSRFToken() {
+            fetch('/refresh-csrf-token')
+                .then(response => response.json())
+                .then(data => {
+                    // Update the CSRF token in the form
+                    document.querySelector('input[name="csrf_token"]').value = data.csrf_token;
+                    console.log('CSRF token refreshed');
+                })
+                .catch(error => console.error('Error refreshing CSRF token:', error));
+        }
+
+        // Set interval to refresh token (every 20 minutes = 1200000 ms)
+        setInterval(refreshCSRFToken, 1200000);
+
+        // Also refresh when the page regains focus after being inactive
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                refreshCSRFToken();
+            }
+        });
+    </script>
 </body>
 </html>

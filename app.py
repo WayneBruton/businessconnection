@@ -43,6 +43,14 @@ app.jinja_env.filters['format_phone_for_tel'] = format_phone_for_tel
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 
+# Configure CSRF with longer timeout (24 hours instead of default 1 hour)
+app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24 hours in seconds
+
+# Route to refresh CSRF token via AJAX
+@app.route('/refresh-csrf-token', methods=['GET'])
+def refresh_csrf_token():
+    return jsonify({'csrf_token': generate_csrf()})
+
 # Authentication decorator
 def login_required(f):
     @wraps(f)
