@@ -14,6 +14,8 @@
     <link rel="manifest" href="{{ url_for('static', filename='favicon/site.webmanifest') }}">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
     <meta name="theme-color" content="#ffffff">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Base Styles */
         body {
@@ -352,6 +354,57 @@
             font-weight: 500;
             color: #2c3e50;
         }
+        
+        /* Contact Info Section */
+        .contact-info-section {
+            display: flex;
+            flex-direction: column;
+            margin: 10px 0;
+        }
+        
+        .contact-info-icon {
+            font-size: 18px;
+            margin-right: 5px;
+        }
+        
+        .contact-info-link {
+            text-decoration: none;
+            color: #3498db;
+            transition: color 0.3s ease;
+        }
+        
+        .contact-info-link:hover {
+            color: #2980b9;
+        }
+        
+        .contact-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        
+        .contact-buttons .contact-info-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-buttons .contact-info-link:hover {
+            background-color: #e9ecef;
+            text-decoration: none;
+        }
+        
+        .contact-buttons .fa-phone {
+            color: #28a745;
+        }
+        
+        .contact-buttons .fa-whatsapp {
+            color: #25D366;
+        }
     </style>
 </head>
 <body>
@@ -498,15 +551,28 @@
                                     <h3>From: {{ referral.from_business }}</h3>
                                 </div>
                                 <p><strong>Contact:</strong> {{ referral.to_name }}</p>
-                                <p><strong>Info:</strong> 
-                                {% if referral.contact_info|is_email %}
-                                    <a href="mailto:{{ referral.contact_info }}">{{ referral.contact_info }}</a>
-                                {% elif referral.contact_info|is_phone %}
-                                    <a href="tel:{{ referral.contact_info|format_phone_for_tel }}">{{ referral.contact_info }}</a>
-                                {% else %}
-                                    {{ referral.contact_info }}
-                                {% endif %}
-                                </p>
+                                <div class="contact-info-section">
+                                    {% if referral.contact_info|is_email %}
+                                        <a href="mailto:{{ referral.contact_info }}" class="contact-info-link">
+                                            <i class="fas fa-envelope contact-info-icon"></i>
+                                            {{ referral.contact_info }}
+                                        </a>
+                                    {% elif referral.contact_info|is_phone %}
+                                        <p><strong>Info:</strong> {{ referral.contact_info }}</p>
+                                        <div class="contact-buttons">
+                                            <a href="tel:{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link">
+                                                <i class="fas fa-phone contact-info-icon"></i>
+                                                Call
+                                            </a>
+                                            <a href="https://wa.me/{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link" target="_blank">
+                                                <i class="fab fa-whatsapp contact-info-icon"></i>
+                                                WhatsApp
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <p>{{ referral.contact_info }}</p>
+                                    {% endif %}
+                                </div>
                                 <p><strong>Date:</strong> {{ referral.referral_date }}</p>
                                 {% if referral.notes %}
                                 <p><strong>Notes:</strong> {{ referral.notes }}</p>
@@ -555,15 +621,28 @@
                                 </div>
                                 <div class="referral-details">
                                     <p><strong>Contact:</strong> {{ referral.to_name }}</p>
-                                    <p><strong>Contact Info:</strong> 
-                                    {% if referral.contact_info|is_email %}
-                                        <a href="mailto:{{ referral.contact_info }}">{{ referral.contact_info }}</a>
-                                    {% elif referral.contact_info|is_phone %}
-                                        <a href="tel:{{ referral.contact_info|format_phone_for_tel }}">{{ referral.contact_info }}</a>
-                                    {% else %}
-                                        {{ referral.contact_info }}
-                                    {% endif %}
-                                    </p>
+                                    <div class="contact-info-section">
+                                        {% if referral.contact_info|is_email %}
+                                            <a href="mailto:{{ referral.contact_info }}" class="contact-info-link">
+                                                <i class="fas fa-envelope contact-info-icon"></i>
+                                                {{ referral.contact_info }}
+                                            </a>
+                                        {% elif referral.contact_info|is_phone %}
+                                            <p><strong>Info:</strong> {{ referral.contact_info }}</p>
+                                            <div class="contact-buttons">
+                                                <a href="tel:{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link">
+                                                    <i class="fas fa-phone contact-info-icon"></i>
+                                                    Call
+                                                </a>
+                                                <a href="https://wa.me/{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link" target="_blank">
+                                                    <i class="fab fa-whatsapp contact-info-icon"></i>
+                                                    WhatsApp
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <p>{{ referral.contact_info }}</p>
+                                        {% endif %}
+                                    </div>
                                     <p><strong>Date:</strong> {{ referral.referral_date }}</p>
                                     {% if referral.notes %}
                                     <p><strong>Notes:</strong> {{ referral.notes }}</p>
