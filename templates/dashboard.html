@@ -33,6 +33,18 @@
             padding: 20px;
         }
         
+        /* Dashboard Container */
+        .dashboard-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+        
         /* Header Styles */
         .dashboard-header {
             display: flex;
@@ -57,6 +69,82 @@
         
         .user-actions a:hover {
             text-decoration: underline;
+        }
+        
+        /* Mobile-friendly header */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .header-section h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: #2c3e50;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .header-section {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-actions {
+                margin-top: 15px;
+                width: 100%;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .header-actions a {
+                width: 100%;
+                text-align: center;
+            }
+        }
+        
+        .history-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+        }
+        
+        .history-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .logout-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+        }
+        
+        .logout-btn:hover {
+            background-color: #c0392b;
         }
         
         /* Dashboard Content */
@@ -412,7 +500,10 @@
     <div class="dashboard-container">
         <div class="header-section">
             <h1>Welcome, {{ user.first_name }}</h1>
-            <a href="{{ url_for('logout') }}"><button class="logout-btn">Logout</button></a>
+            <div class="header-actions">
+                <a href="{{ url_for('history') }}" class="history-btn">View History</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+            </div>
         </div>
         
         <div id="flash-container">

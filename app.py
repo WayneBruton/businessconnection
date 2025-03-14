@@ -752,6 +752,54 @@ def update_referral_status():
         print(f"Error updating referral status: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/history')
+@login_required
+def history():
+    """History page showing all referrals where accept is false or deal_accepted is not 'Pending' when accept is true."""
+    # Get user information
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    if not user:
+        # If user not found, log them out
+        return redirect(url_for('logout'))
+    
+    # If the user is Admin, redirect to admin dashboard
+    if user['business_name'] == 'Admin':
+        return redirect(url_for('admin_dashboard'))
+    
+    # Get all referrals to the user's business
+    all_received_referrals = get_referrals_to_business(user['business_name'])
+    
+    # Ensure all referrals have a deal_accepted value
+    all_received_referrals = ensure_deal_status(all_received_referrals)
+    
+    # Filter referrals to show only where accept is false or deal_accepted is not "Pending" when accept is true
+    history_referrals = []
+    for ref in all_received_referrals:
+        accept_value = ref.get('accept')
+        deal_status = ref.get('deal_accepted')
+        
+        # Check if accept is True (could be boolean True or string "true")
+        is_accepted = accept_value is True or (isinstance(accept_value, str) and accept_value.lower() == "true")
+        
+        # Check if deal_accepted is "Pending"
+        is_pending = deal_status == "Pending" or not deal_status
+        
+        # Add to history if accept is false OR (accept is true AND deal_accepted is not "Pending")
+        if not is_accepted or (is_accepted and not is_pending):
+            history_referrals.append(ref)
+    
+    # Generate CSRF token for AJAX requests
+    csrf_token = generate_csrf()
+    
+    return render_template(
+        'history.html', 
+        user=user, 
+        history_referrals=history_referrals,
+        csrf_token=csrf_token
+    )
+
 @app.route('/logout')
 def logout():
     # Clear session
