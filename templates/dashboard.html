@@ -217,6 +217,11 @@
             background-color: #2980b9;
         }
         
+        .btn-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
         /* Referrals Section */
         .referrals-section {
             background-color: #fff;
@@ -564,27 +569,27 @@
                             </div>
                             
                             <div class="form-group">
-                                <label for="to_business">To Business</label>
-                                {{ referral_form.to_business(class="form-control") }}
-                                {% if referral_form.to_business.errors %}
-                                    {% for error in referral_form.to_business.errors %}
-                                        <div class="error-message">{{ error }}</div>
-                                    {% endfor %}
-                                {% endif %}
-                            </div>
-                            
-                            <div class="form-group">
                                 <label>Referral Type</label>
                                 <div class="radio-group">
                                     {% for subfield in referral_form.referral_type %}
                                         <div class="radio-option">
-                                            {{ subfield(class="radio-input") }}
+                                            {{ subfield(class="radio-input referral-type-radio") }}
                                             {{ subfield.label(class="radio-label") }}
                                         </div>
                                     {% endfor %}
                                 </div>
                                 {% if referral_form.referral_type.errors %}
                                     {% for error in referral_form.referral_type.errors %}
+                                        <div class="error-message">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group" id="to-business-group">
+                                <label for="to_business">To Business</label>
+                                {{ referral_form.to_business(class="form-control") }}
+                                {% if referral_form.to_business.errors %}
+                                    {% for error in referral_form.to_business.errors %}
                                         <div class="error-message">{{ error }}</div>
                                     {% endfor %}
                                 {% endif %}
@@ -779,6 +784,33 @@
                     form.reset();
                 }
             }
+            
+            // Add form submission handler to prevent double submissions
+            const referralForm = document.getElementById('referral-form');
+            const submitButton = referralForm.querySelector('input[type="submit"]');
+            
+            if (referralForm) {
+                referralForm.addEventListener('submit', function(e) {
+                    // Disable the submit button to prevent double submissions
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.value = 'Submitting...';
+                        submitButton.classList.add('btn-disabled');
+                    }
+                    
+                    // The form will be submitted normally
+                    // Button will remain disabled until page reloads or submission fails
+                    
+                    // Set a timeout to re-enable the button in case of network issues
+                    setTimeout(function() {
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.value = 'Submit Referral';
+                            submitButton.classList.remove('btn-disabled');
+                        }
+                    }, 10000); // 10 seconds timeout as a fallback
+                });
+            }
         });
         
         // Add event listeners for status dropdowns
@@ -854,6 +886,23 @@
                 
                 // Store initial value as previous value
                 select.setAttribute('data-previous-value', select.value);
+            });
+        });
+        
+        // Add event listener for referral type radio buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const referralTypeRadios = document.querySelectorAll('.referral-type-radio');
+            
+            referralTypeRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const toBusinessGroup = document.getElementById('to-business-group');
+                    
+                    if (this.value === 'visitor') {
+                        toBusinessGroup.style.display = 'none';
+                    } else {
+                        toBusinessGroup.style.display = 'block';
+                    }
+                });
             });
         });
     </script>

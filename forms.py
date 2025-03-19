@@ -107,7 +107,7 @@ class ReferralForm(FlaskForm):
         DataRequired(message="Business is required")
     ])
     referral_date = DateField('Referral Date', render_kw={'readonly': True})
-    referral_type = RadioField('Referral Type', choices=[('internal', 'Internal'), ('external', 'External')], validators=[
+    referral_type = RadioField('Referral Type', choices=[('internal', 'Internal'), ('external', 'External'), ('visitor', 'Visitor')], validators=[
         DataRequired(message="Please select a referral type")
     ])
     to_name = StringField('Referral Person Name', validators=[

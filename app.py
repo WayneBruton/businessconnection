@@ -426,10 +426,18 @@ def dashboard():
     
     if referral_form.validate_on_submit():
         print("Form validated successfully")
-        # Get the to_business name from the selected ID
-        to_business_id = referral_form.to_business.data
-        to_business_user = get_user_by_id(to_business_id)
-        to_business_name = to_business_user['business_name'] if to_business_user else ""
+        
+        # Check if the referral type is visitor
+        if referral_form.referral_type.data == 'visitor':
+            # For visitor referrals, set to_business to Admin
+            admin_user = get_user_by_business_name('Admin')
+            to_business_name = 'Admin'
+            print(f"Visitor referral detected, setting to_business to Admin")
+        else:
+            # For internal and external referrals, use the selected business
+            to_business_id = referral_form.to_business.data
+            to_business_user = get_user_by_id(to_business_id)
+            to_business_name = to_business_user['business_name'] if to_business_user else ""
         
         print(f"Creating referral from {user['business_name']} to {to_business_name}")
         
@@ -481,6 +489,15 @@ def dashboard():
             return redirect(url_for('dashboard'))
         else:
             flash('Failed to create referral. Please try again.', 'error')
+    
+    # Handle form submission for visitor referrals
+    if request.method == 'POST' and request.form.get('referral_type') == 'visitor':
+        # Find Admin user to set as to_business for visitor referrals
+        admin_user = next((u for u in get_all_enabled_users() if u['business_name'] == 'Admin'), None)
+        if admin_user:
+            # Set the to_business field to Admin's ID for validation
+            request.form = request.form.copy()  # Make request.form mutable
+            request.form['to_business'] = str(admin_user['_id'])
     
     # Generate CSRF token for AJAX requests
     csrf_token = generate_csrf()
