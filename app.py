@@ -135,6 +135,29 @@ def send_webhook_notification(referral, field, value):
     if referree_user:
         serializable_referral['referree'] = serialize_mongodb_doc(referree_user)
     
+    # Special case for specific businesses
+    if referral['to_business'] in ["Easylife Kitchens-Tokai", "TLC Flooring"]:
+        # Get all users from the same company
+        same_company_users = []
+        target_business = referral['to_business']
+        
+        # Get all users
+        all_users = get_all_users()
+        
+        # Filter users from the same company
+        for user in all_users:
+            # Skip the current user
+            if referree_user and user.get('_id') == referree_user.get('_id'):
+                continue
+                
+            # Check if user is from the same company
+            if user.get('business_name') == target_business:
+                same_company_users.append(serialize_mongodb_doc(user))
+        
+        if same_company_users:
+            serializable_referral['same_company_users'] = same_company_users
+            print(f"Added {len(same_company_users)} other users from {target_business}")
+    
     # Add status update information
     serializable_referral['status_update'] = {
         'field': field,
