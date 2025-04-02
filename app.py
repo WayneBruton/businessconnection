@@ -750,7 +750,7 @@ def update_referral_status():
         
         # For deal_accepted field, ensure it's one of the valid values
         if field == 'deal_accepted':
-            valid_values = ['Pending', 'Accepted', 'Rejected']
+            valid_values = ['Pending', 'Accepted', 'Unsuccessful']
             if value not in valid_values:
                 value = 'Pending'  # Default to Pending if invalid value
             print(f"Using value for {field}: {value}")

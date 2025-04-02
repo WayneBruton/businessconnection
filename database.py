@@ -174,7 +174,7 @@ def create_referral(from_business, to_business, to_name, contact_info, referral_
             "created_at": datetime.now(),
             "accept": True,          # New field: Whether the business accepts the referral
             "contacted": False,      # New field: Whether the business has contacted the referral
-            "deal_accepted": "Pending"   # New field: Status of the deal (Pending, Accepted, Rejected)
+            "deal_accepted": "Pending"   # New field: Status of the deal (Pending, Accepted, Unsuccessful)
         }
         
         print(f"Referral data: {referral}")
@@ -388,7 +388,7 @@ def get_filtered_referrals_to_business(business_name, accept=None, deal_accepted
     Parameters:
     - business_name: The name of the business to get referrals for
     - accept: Filter by accept status (True/False/None)
-    - deal_accepted: Filter by deal_accepted status ("Pending"/"Accepted"/"Rejected"/None)
+    - deal_accepted: Filter by deal_accepted status ("Pending"/"Accepted"/"Unsuccessful"/None)
     
     If accept or deal_accepted is None, no filtering is applied for that field.
     """

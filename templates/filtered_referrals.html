@@ -9,7 +9,7 @@
                     <div class="referral-header">
                         <h3>From: {{ referral.from_business }}</h3>
                         <span class="status-badge status-{{ referral.status|lower }}">{{ referral.status }}</span>
-                        <span class="status-badge {% if referral.deal_accepted == 'Accepted' %}status-completed{% elif referral.deal_accepted == 'Rejected' %}status-rejected{% endif %}">{{ referral.deal_accepted }}</span>
+                        <span class="status-badge {% if referral.deal_accepted == 'Accepted' %}status-completed{% elif referral.deal_accepted == 'Unsuccessful' %}status-rejected{% endif %}">{{ referral.deal_accepted }}</span>
                     </div>
                     <p><strong>Contact:</strong> {{ referral.to_name }}</p>
                     <p><strong>Info:</strong> {{ referral.contact_info }}</p>

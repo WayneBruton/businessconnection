@@ -33,7 +33,7 @@
                             <select id="deal-{{ referral._id }}" class="status-select" data-field="deal_accepted" data-referral-id="{{ referral._id }}">
                                 <option value="Pending" {% if referral.deal_accepted == 'Pending' or not referral.deal_accepted %}selected{% endif %}>Pending</option>
                                 <option value="Accepted" {% if referral.deal_accepted == 'Accepted' %}selected{% endif %}>Accepted</option>
-                                <option value="Rejected" {% if referral.deal_accepted == 'Rejected' %}selected{% endif %}>Rejected</option>
+                                <option value="Unsuccessful" {% if referral.deal_accepted == 'Unsuccessful' %}selected{% endif %}>Unsuccessful</option>
                             </select>
                         </div>
                     </div>
@@ -73,7 +73,7 @@
                                 </span>
                                 <span class="status-indicator 
                                     {% if referral.deal_accepted == 'Accepted' %}status-deal-accepted
-                                    {% elif referral.deal_accepted == 'Rejected' %}status-deal-rejected
+                                    {% elif referral.deal_accepted == 'Unsuccessful' %}status-deal-rejected
                                     {% else %}status-deal-pending{% endif %}">
                                     Deal: {{ referral.deal_accepted }}
                                 </span>
