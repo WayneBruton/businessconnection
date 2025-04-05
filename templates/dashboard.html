@@ -811,6 +811,52 @@
                     }, 10000); // 10 seconds timeout as a fallback
                 });
             }
+            
+            // Handle special behavior for internal referrals
+            const referralTypeRadios = document.querySelectorAll('.referral-type-radio');
+            const toNameField = document.querySelector('#to_name').parentElement;
+            const contactInfoField = document.querySelector('#contact_info').parentElement;
+            const toNameInput = document.querySelector('#to_name');
+            const contactInfoInput = document.querySelector('#contact_info');
+            
+            // Store user's info for internal referrals
+            const currentUserName = "{{ user.first_name }} {{ user.last_name }}";
+            const currentUserContact = "{{ user.mobile_number if user.mobile_number else user.email }}";
+            
+            // Function to handle referral type change
+            function handleReferralTypeChange() {
+                const internalSelected = document.querySelector('.referral-type-radio[value="internal"]:checked');
+                
+                if (internalSelected) {
+                    // For internal referrals, default to the logged-in user
+                    toNameInput.value = currentUserName;
+                    contactInfoInput.value = currentUserContact;
+                    
+                    // Hide these fields for internal referrals
+                    toNameField.style.display = 'none';
+                    contactInfoField.style.display = 'none';
+                } else {
+                    // For external or visitor referrals, show the fields and clear values if they match the user's info
+                    toNameField.style.display = 'block';
+                    contactInfoField.style.display = 'block';
+                    
+                    // Only clear the fields if they contain the user's info (to avoid clearing user entered data)
+                    if (toNameInput.value === currentUserName) {
+                        toNameInput.value = '';
+                    }
+                    if (contactInfoInput.value === currentUserContact) {
+                        contactInfoInput.value = '';
+                    }
+                }
+            }
+            
+            // Add event listeners to the radio buttons
+            referralTypeRadios.forEach(radio => {
+                radio.addEventListener('change', handleReferralTypeChange);
+            });
+            
+            // Initial check in case 'internal' is pre-selected
+            handleReferralTypeChange();
         });
         
         // Add event listeners for status dropdowns
