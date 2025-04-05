@@ -913,5 +913,52 @@ def logout():
     flash('You have been logged out', 'success')
     return response
 
+@app.route('/update_talks', methods=['POST'])
+@login_required
+def update_talks():
+    """Update user's 5-minute and 10-minute talks."""
+    try:
+        # Get data from request
+        data = request.get_json()
+        
+        # Verify CSRF token
+        csrf_token = data.get('csrf_token')
+        if not csrf_token or not validate_csrf(csrf_token):
+            return jsonify({'success': False, 'error': 'Invalid CSRF token.'})
+        
+        # Get user ID from session (current user)
+        current_user_id = session.get('user_id')
+        
+        # Get user ID from request
+        user_id = data.get('user_id')
+        
+        # Verify that the user is updating their own talks
+        if str(current_user_id) != str(user_id):
+            return jsonify({'success': False, 'error': 'You can only update your own talks.'})
+        
+        # Get the talk contents
+        five_minute_talk = data.get('five_minute_talk', '')
+        ten_minute_talk = data.get('ten_minute_talk', '')
+        
+        # Update the user in the database
+        from bson.objectid import ObjectId
+        result = users_collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {
+                '5_minute_talk': five_minute_talk,
+                '10_minute_talk': ten_minute_talk,
+                'updated_at': datetime.now()
+            }}
+        )
+        
+        if result.modified_count > 0:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'No changes were made.'})
+            
+    except Exception as e:
+        print(f"Error updating talks: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == '__main__':
     app.run(debug=True, port=5015)

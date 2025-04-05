@@ -523,6 +523,51 @@
             text-align: center;
             margin-right: 5px;
         }
+        
+        .talk-sections {
+            margin-top: 20px;
+        }
+        
+        .talk-form {
+            margin-top: 10px;
+        }
+        
+        .talk-form .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .talk-form textarea {
+            padding: 10px;
+            font-size: 16px;
+        }
+        
+        .talk-form .btn-primary {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        
+        .talk-save-status {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .alert-success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        
+        .alert-danger {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
     </style>
 </head>
 <body>
@@ -568,6 +613,12 @@
                             {% endif %}
                             <p><strong>Account Status:</strong> {% if user.enabled %}Active{% else %}Disabled{% endif %}</p>
                             <p><strong>Notifications:</strong> {% if user.notify %}Enabled{% else %}Disabled{% endif %}</p>
+                            {% if user.get('5_minute_talk') %}
+                            <p><strong>5-Minute Talk:</strong> {{ user.get('5_minute_talk', '') }}</p>
+                            {% endif %}
+                            {% if user.get('10_minute_talk') %}
+                            <p><strong>10-Minute Talk:</strong> {{ user.get('10_minute_talk', '') }}</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -872,16 +923,6 @@
                     }
                     
                     // The form will be submitted normally
-                    // Button will remain disabled until page reloads or submission fails
-                    
-                    // Set a timeout to re-enable the button in case of network issues
-                    setTimeout(function() {
-                        if (submitButton) {
-                            submitButton.disabled = false;
-                            submitButton.value = 'Submit Referral';
-                            submitButton.classList.remove('btn-disabled');
-                        }
-                    }, 10000); // 10 seconds timeout as a fallback
                 });
             }
             
