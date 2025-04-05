@@ -632,7 +632,9 @@ def edit_user(user_id=None):
             'mobile_number': form.mobile_number.data,
             'office_number': form.office_number.data,
             'enabled': form.enabled.data,
-            'notify': form.notify.data
+            'notify': form.notify.data,
+            '5_minute_talk': form.five_minute_talk.data,
+            '10_minute_talk': form.ten_minute_talk.data
         }
         
         # Update password if provided and not empty
@@ -663,6 +665,8 @@ def edit_user(user_id=None):
             form.office_number.data = user_to_edit.get('office_number', '')
             form.enabled.data = user_to_edit.get('enabled', True)
             form.notify.data = user_to_edit.get('notify', True)
+            form.five_minute_talk.data = user_to_edit.get('5_minute_talk', '')
+            form.ten_minute_talk.data = user_to_edit.get('10_minute_talk', '')
     
     return render_template('edit_user.html', form=form)
 
@@ -691,7 +695,9 @@ def get_user_data(business_name):
         'mobile_number': user.get('mobile_number', ''),
         'office_number': user.get('office_number', ''),
         'enabled': user.get('enabled', True),
-        'notify': user.get('notify', True)
+        'notify': user.get('notify', True),
+        '5_minute_talk': user.get('5_minute_talk', ''),
+        '10_minute_talk': user.get('10_minute_talk', '')
     }
     
     return jsonify({'success': True, 'user': user_data})
@@ -921,20 +927,8 @@ def update_talks():
         # Get data from request
         data = request.get_json()
         
-        # Verify CSRF token
-        csrf_token = data.get('csrf_token')
-        if not csrf_token or not validate_csrf(csrf_token):
-            return jsonify({'success': False, 'error': 'Invalid CSRF token.'})
-        
         # Get user ID from session (current user)
         current_user_id = session.get('user_id')
-        
-        # Get user ID from request
-        user_id = data.get('user_id')
-        
-        # Verify that the user is updating their own talks
-        if str(current_user_id) != str(user_id):
-            return jsonify({'success': False, 'error': 'You can only update your own talks.'})
         
         # Get the talk contents
         five_minute_talk = data.get('five_minute_talk', '')
@@ -943,7 +937,7 @@ def update_talks():
         # Update the user in the database
         from bson.objectid import ObjectId
         result = users_collection.update_one(
-            {'_id': ObjectId(user_id)},
+            {'_id': ObjectId(current_user_id)},
             {'$set': {
                 '5_minute_talk': five_minute_talk,
                 '10_minute_talk': ten_minute_talk,

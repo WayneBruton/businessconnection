@@ -85,6 +85,12 @@ class EditUserForm(FlaskForm):
     ])
     enabled = BooleanField('Enable Account')
     notify = BooleanField('Receive Notifications')
+    five_minute_talk = StringField('5-Minute Talk', validators=[
+        Length(max=2000, message="5-minute talk must be less than 2000 characters")
+    ])
+    ten_minute_talk = StringField('10-Minute Talk', validators=[
+        Length(max=5000, message="10-minute talk must be less than 5000 characters")
+    ])
     submit = SubmitField('Update User')
     
     def validate_password(self, field):

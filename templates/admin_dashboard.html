@@ -112,6 +112,18 @@
         padding: 20px;
     }
     
+    .talk-preview {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .no-content {
+        color: #999;
+        font-style: italic;
+    }
+    
     /* Mobile Responsiveness */
     @media (max-width: 768px) {
         .header-section {
@@ -391,6 +403,8 @@
                                     <th>Office</th>
                                     <th>Status</th>
                                     <th>Notifications</th>
+                                    <th>5-Min Talk</th>
+                                    <th>10-Min Talk</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -404,6 +418,20 @@
                                         <td>{{ user_item.office_number }}</td>
                                         <td>{% if user_item.enabled %}Active{% else %}Disabled{% endif %}</td>
                                         <td>{% if user_item.notify %}Enabled{% else %}Disabled{% endif %}</td>
+                                        <td>
+                                            {% if user_item.get('5_minute_talk') %}
+                                                <div class="talk-preview">{{ user_item.get('5_minute_talk', '')[:50] }}{% if user_item.get('5_minute_talk')|length > 50 %}...{% endif %}</div>
+                                            {% else %}
+                                                <span class="no-content">Not provided</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if user_item.get('10_minute_talk') %}
+                                                <div class="talk-preview">{{ user_item.get('10_minute_talk', '')[:50] }}{% if user_item.get('10_minute_talk')|length > 50 %}...{% endif %}</div>
+                                            {% else %}
+                                                <span class="no-content">Not provided</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <a href="{{ url_for('edit_user', user_id=user_item._id) }}" class="btn btn-secondary btn-sm">Edit</a>
                                         </td>
@@ -444,6 +472,26 @@
                                 <div class="mobile-user-card-item">
                                     <div class="mobile-user-card-label">Notifications</div>
                                     <div class="mobile-user-card-value">{% if user_item.notify %}Enabled{% else %}Disabled{% endif %}</div>
+                                </div>
+                                <div class="mobile-user-card-item">
+                                    <div class="mobile-user-card-label">5-Min Talk</div>
+                                    <div class="mobile-user-card-value">
+                                        {% if user_item.get('5_minute_talk') %}
+                                            <div class="talk-preview">{{ user_item.get('5_minute_talk', '')[:50] }}{% if user_item.get('5_minute_talk')|length > 50 %}...{% endif %}</div>
+                                        {% else %}
+                                            <span class="no-content">Not provided</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mobile-user-card-item">
+                                    <div class="mobile-user-card-label">10-Min Talk</div>
+                                    <div class="mobile-user-card-value">
+                                        {% if user_item.get('10_minute_talk') %}
+                                            <div class="talk-preview">{{ user_item.get('10_minute_talk', '')[:50] }}{% if user_item.get('10_minute_talk')|length > 50 %}...{% endif %}</div>
+                                        {% else %}
+                                            <span class="no-content">Not provided</span>
+                                        {% endif %}
+                                    </div>
                                 </div>
                                 <div class="mobile-user-card-actions">
                                     <a href="{{ url_for('edit_user', user_id=user_item._id) }}" class="btn btn-secondary btn-sm" style="width: 100%;">Edit</a>

@@ -1008,7 +1008,7 @@
                     }
                     
                     // Get CSRF token if available
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                     
                     // Send AJAX request to update the referral status
                     fetch('/update_referral_status', {

@@ -246,6 +246,26 @@
             </div>
             
             <div class="form-group">
+                <label for="five_minute_talk">5-Minute Talk</label>
+                {{ form.five_minute_talk(class="form-control", id="five_minute_talk", placeholder="Enter 5-minute business introduction (optional)") }}
+                {% if form.five_minute_talk.errors %}
+                    {% for error in form.five_minute_talk.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="ten_minute_talk">10-Minute Talk</label>
+                {{ form.ten_minute_talk(class="form-control", id="ten_minute_talk", placeholder="Enter 10-minute detailed business presentation (optional)") }}
+                {% if form.ten_minute_talk.errors %}
+                    {% for error in form.ten_minute_talk.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
                 {{ form.submit(class="btn btn-primary") }}
             </div>
         </form>
