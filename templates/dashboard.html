@@ -289,6 +289,7 @@
             margin: 0;
             font-size: 18px;
             color: #2c3e50;
+            margin-bottom: 5px;
         }
         
         .status-badge {
@@ -498,6 +499,30 @@
         .contact-buttons .fa-whatsapp {
             color: #25D366;
         }
+        
+        .business-contact-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .business-contact-links .contact-info-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #3498db;
+            margin-bottom: 4px;
+        }
+        
+        .business-contact-links .contact-info-icon {
+            width: 20px;
+            display: inline-block;
+            text-align: center;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -646,6 +671,30 @@
                                 <div class="referral-header">
                                     <h3>From: {{ referral.from_business }}</h3>
                                 </div>
+                                <div class="business-contact-links">
+                                    {% if referral.sender_email %}
+                                        <a href="mailto:{{ referral.sender_email }}" class="contact-info-link">
+                                            <i class="fas fa-envelope contact-info-icon"></i>
+                                            {{ referral.sender_email }}
+                                        </a>
+                                    {% endif %}
+                                    {% if referral.sender_mobile %}
+                                        <a href="tel:{{ referral.sender_mobile|format_phone_for_tel }}" class="contact-info-link">
+                                            <i class="fas fa-mobile-alt contact-info-icon"></i>
+                                            {{ referral.sender_mobile }}
+                                        </a>
+                                        <a href="https://wa.me/{{ referral.sender_mobile|format_phone_for_whatsapp|replace('+', '') }}" class="contact-info-link" target="_blank">
+                                            <i class="fab fa-whatsapp contact-info-icon"></i>
+                                            WhatsApp
+                                        </a>
+                                    {% endif %}
+                                    {% if referral.sender_office %}
+                                        <a href="tel:{{ referral.sender_office|format_phone_for_tel }}" class="contact-info-link">
+                                            <i class="fas fa-phone contact-info-icon"></i>
+                                            {{ referral.sender_office }}
+                                        </a>
+                                    {% endif %}
+                                </div>
                                 <p><strong>Contact:</strong> {{ referral.to_name }}</p>
                                 <div class="contact-info-section">
                                     {% if referral.contact_info|is_email %}
@@ -711,9 +760,33 @@
                 {% if referrals %}
                     <div class="referrals-list">
                         {% for referral in referrals %}
-                            <div class="referral-item">
+                            <div class="referral-item" data-referral-id="{{ referral._id }}">
                                 <div class="referral-header">
                                     <h3>{{ referral.to_business }}</h3>
+                                </div>
+                                <div class="business-contact-links">
+                                    {% if referral.recipient_email %}
+                                        <a href="mailto:{{ referral.recipient_email }}" class="contact-info-link">
+                                            <i class="fas fa-envelope contact-info-icon"></i>
+                                            {{ referral.recipient_email }}
+                                        </a>
+                                    {% endif %}
+                                    {% if referral.recipient_mobile %}
+                                        <a href="tel:{{ referral.recipient_mobile|format_phone_for_tel }}" class="contact-info-link">
+                                            <i class="fas fa-mobile-alt contact-info-icon"></i>
+                                            {{ referral.recipient_mobile }}
+                                        </a>
+                                        <a href="https://wa.me/{{ referral.recipient_mobile|format_phone_for_whatsapp|replace('+', '') }}" class="contact-info-link" target="_blank">
+                                            <i class="fab fa-whatsapp contact-info-icon"></i>
+                                            WhatsApp
+                                        </a>
+                                    {% endif %}
+                                    {% if referral.recipient_office %}
+                                        <a href="tel:{{ referral.recipient_office|format_phone_for_tel }}" class="contact-info-link">
+                                            <i class="fas fa-phone contact-info-icon"></i>
+                                            {{ referral.recipient_office }}
+                                        </a>
+                                    {% endif %}
                                 </div>
                                 <div class="referral-details">
                                     <p><strong>Contact:</strong> {{ referral.to_name }}</p>

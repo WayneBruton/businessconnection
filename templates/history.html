@@ -321,6 +321,43 @@
         .nav-link.active {
             background-color: #2c3e50;
         }
+        
+        .status-indicator {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .status-accepted {
+            background-color: #27ae60;
+        }
+        
+        .status-not-accepted {
+            background-color: #e74c3c;
+        }
+        
+        .status-contacted {
+            background-color: #3498db;
+        }
+        
+        .status-not-contacted {
+            background-color: #7f8c8d;
+        }
+        
+        .status-deal-accepted {
+            background-color: #27ae60;
+        }
+        
+        .status-deal-unsuccessful {
+            background-color: #e74c3c;
+        }
+        
+        .status-deal-pending {
+            background-color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -336,11 +373,11 @@
         <!-- Referrals List Section -->
         <div class="referrals-container">
             <div class="referrals-section history-referrals-section">
-                <h2>Referral History</h2>
+                <h2>Received Referral History</h2>
                 
-                {% if history_referrals %}
+                {% if history_received_referrals %}
                     <div class="referrals-list">
-                        {% for referral in history_referrals %}
+                        {% for referral in history_received_referrals %}
                             <div class="referral-item history-referral" data-referral-id="{{ referral._id }}">
                                 <div class="referral-header">
                                     <h3>From: {{ referral.from_business }}</h3>
@@ -372,35 +409,88 @@
                                 {% if referral.notes %}
                                 <p><strong>Notes:</strong> {{ referral.notes }}</p>
                                 {% endif %}
-                                <div class="referral-status-controls">
-                                    <div class="status-control">
-                                        <label for="accepted-{{ referral._id }}">Accepted:</label>
-                                        <select id="accepted-{{ referral._id }}" class="status-select" data-field="accept" data-referral-id="{{ referral._id }}">
-                                            <option value="false" {% if not referral.accept %}selected{% endif %}>No</option>
-                                            <option value="true" {% if referral.accept %}selected{% endif %}>Yes</option>
-                                        </select>
-                                    </div>
-                                    <div class="status-control">
-                                        <label for="contacted-{{ referral._id }}">Contacted:</label>
-                                        <select id="contacted-{{ referral._id }}" class="status-select" data-field="contacted" data-referral-id="{{ referral._id }}">
-                                            <option value="false" {% if not referral.contacted %}selected{% endif %}>No</option>
-                                            <option value="true" {% if referral.contacted %}selected{% endif %}>Yes</option>
-                                        </select>
-                                    </div>
-                                    <div class="status-control">
-                                        <label for="deal-{{ referral._id }}">Deal Status:</label>
-                                        <select id="deal-{{ referral._id }}" class="status-select" data-field="deal_accepted" data-referral-id="{{ referral._id }}">
-                                            <option value="Pending" {% if referral.deal_accepted == 'Pending' or not referral.deal_accepted %}selected{% endif %}>Pending</option>
-                                            <option value="Accepted" {% if referral.deal_accepted == 'Accepted' %}selected{% endif %}>Accepted</option>
-                                            <option value="Unsuccessful" {% if referral.deal_accepted == 'Unsuccessful' %}selected{% endif %}>Unsuccessful</option>
-                                        </select>
-                                    </div>
+                                <div class="referral-status-indicators">
+                                    <p>
+                                        <span class="status-indicator {% if referral.accept %}status-accepted{% else %}status-not-accepted{% endif %}">
+                                            {% if referral.accept %}Accepted{% else %}Not Accepted{% endif %}
+                                        </span>
+                                        <span class="status-indicator {% if referral.contacted %}status-contacted{% else %}status-not-contacted{% endif %}">
+                                            {% if referral.contacted %}Contacted{% else %}Not Contacted{% endif %}
+                                        </span>
+                                        <span class="status-indicator 
+                                            {% if referral.deal_accepted == 'Accepted' %}status-deal-accepted
+                                            {% elif referral.deal_accepted == 'Unsuccessful' %}status-deal-unsuccessful
+                                            {% else %}status-deal-pending{% endif %}">
+                                            Deal: {{ referral.deal_accepted }}
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="no-referrals">No history referrals found.</p>
+                    <p class="no-referrals">No received referrals in history.</p>
+                {% endif %}
+            </div>
+            
+            <div class="referrals-section history-referrals-section">
+                <h2>Sent Referral History</h2>
+                
+                {% if history_sent_referrals %}
+                    <div class="referrals-list">
+                        {% for referral in history_sent_referrals %}
+                            <div class="referral-item history-referral" data-referral-id="{{ referral._id }}">
+                                <div class="referral-header">
+                                    <h3>To: {{ referral.to_business }}</h3>
+                                </div>
+                                <p><strong>Contact:</strong> {{ referral.to_name }}</p>
+                                <div class="contact-info-section">
+                                    {% if referral.contact_info|is_email %}
+                                        <a href="mailto:{{ referral.contact_info }}" class="contact-info-link">
+                                            <i class="fas fa-envelope contact-info-icon"></i>
+                                            {{ referral.contact_info }}
+                                        </a>
+                                    {% elif referral.contact_info|is_phone %}
+                                        <p><strong>Info:</strong> {{ referral.contact_info }}</p>
+                                        <div class="contact-buttons">
+                                            <a href="tel:{{ referral.contact_info|format_phone_for_tel }}" class="contact-info-link">
+                                                <i class="fas fa-phone contact-info-icon"></i>
+                                                Call
+                                            </a>
+                                            <a href="https://wa.me/{{ referral.contact_info|format_phone_for_whatsapp|replace('+', '') }}" class="contact-info-link" target="_blank">
+                                                <i class="fab fa-whatsapp contact-info-icon"></i>
+                                                WhatsApp
+                                            </a>
+                                        </div>
+                                    {% else %}
+                                        <p>{{ referral.contact_info }}</p>
+                                    {% endif %}
+                                </div>
+                                <p><strong>Date:</strong> {{ referral.referral_date }}</p>
+                                {% if referral.notes %}
+                                <p><strong>Notes:</strong> {{ referral.notes }}</p>
+                                {% endif %}
+                                <div class="referral-status-indicators">
+                                    <p>
+                                        <span class="status-indicator {% if referral.accept %}status-accepted{% else %}status-not-accepted{% endif %}">
+                                            {% if referral.accept %}Accepted{% else %}Not Accepted{% endif %}
+                                        </span>
+                                        <span class="status-indicator {% if referral.contacted %}status-contacted{% else %}status-not-contacted{% endif %}">
+                                            {% if referral.contacted %}Contacted{% else %}Not Contacted{% endif %}
+                                        </span>
+                                        <span class="status-indicator 
+                                            {% if referral.deal_accepted == 'Accepted' %}status-deal-accepted
+                                            {% elif referral.deal_accepted == 'Unsuccessful' %}status-deal-unsuccessful
+                                            {% else %}status-deal-pending{% endif %}">
+                                            Deal: {{ referral.deal_accepted }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="no-referrals">No sent referrals in history.</p>
                 {% endif %}
             </div>
         </div>

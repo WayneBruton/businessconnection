@@ -380,6 +380,42 @@ def dashboard():
     for i, ref in enumerate(referrals):
         print(f"Sent referral {i+1}: {ref.get('from_business', 'Unknown')} -> {ref.get('to_business', 'Unknown')}")
     
+    # Ensure all referrals have a deal_accepted value
+    referrals = ensure_deal_status(referrals)
+    
+    # Filter sent referrals to only show pending ones (similar to received referrals)
+    active_sent_referrals = []
+    for ref in referrals:
+        accept_value = ref.get('accept')
+        deal_status = ref.get('deal_accepted')
+        
+        print(f"Checking sent referral {ref.get('_id')}: accept={accept_value}, deal_accepted={deal_status}")
+        
+        # Check if accept is True (could be boolean True or string "true")
+        is_accepted = accept_value is True or (isinstance(accept_value, str) and accept_value.lower() == "true")
+        
+        # Check if deal_accepted is "Pending"
+        is_pending = deal_status == "Pending" or not deal_status
+        
+        print(f"  - is_accepted: {is_accepted}, is_pending: {is_pending}")
+        
+        # Only show referrals that are accepted and pending on the dashboard
+        if is_accepted and is_pending:
+            print(f"  - ADDING TO ACTIVE SENT REFERRALS LIST")
+            
+            # Add recipient business contact information
+            recipient = get_user_by_business_name(ref.get('to_business', ''))
+            if recipient:
+                ref['recipient_email'] = recipient.get('email', '')
+                ref['recipient_mobile'] = recipient.get('mobile_number', '')
+                ref['recipient_office'] = recipient.get('office_number', '')
+            
+            active_sent_referrals.append(ref)
+        else:
+            print(f"  - NOT ADDING TO ACTIVE SENT REFERRALS LIST (will be in history)")
+    
+    print(f"Filtered active sent referrals count: {len(active_sent_referrals)}")
+    
     # Get referrals sent to the user's business
     print(f"Current user details: ID={user_id}, Name={user.get('first_name', '')} {user.get('last_name', '')}")
     print(f"Current user business name: '{user['business_name']}'")
@@ -418,6 +454,14 @@ def dashboard():
         
         if is_accepted and is_pending:
             print(f"  - ADDING TO FILTERED LIST")
+            
+            # Add sender business contact information
+            sender = get_user_by_business_name(ref.get('from_business', ''))
+            if sender:
+                ref['sender_email'] = sender.get('email', '')
+                ref['sender_mobile'] = sender.get('mobile_number', '')
+                ref['sender_office'] = sender.get('office_number', '')
+                
             received_referrals.append(ref)
         else:
             print(f"  - NOT ADDING TO FILTERED LIST")
@@ -432,10 +476,6 @@ def dashboard():
         print(f"  - Accept: {ref.get('accept')} (Type: {type(ref.get('accept')).__name__})")
         print(f"  - Deal Status: {ref.get('deal_accepted')} (Type: {type(ref.get('deal_accepted')).__name__})")
     print("----------------------------------------\n")
-    
-    # Ensure all referrals have a deal_accepted value
-    referrals = ensure_deal_status(referrals)
-    received_referrals = ensure_deal_status(received_referrals)
     
     # Get current date and time for the form
     now = datetime.now()
@@ -528,7 +568,7 @@ def dashboard():
     return render_template(
         'dashboard.html', 
         user=user, 
-        referrals=referrals, 
+        referrals=active_sent_referrals, 
         received_referrals=received_referrals,
         referral_form=referral_form,
         now=now, 
@@ -815,7 +855,7 @@ def history():
     all_received_referrals = ensure_deal_status(all_received_referrals)
     
     # Filter referrals to show only where accept is false or deal_accepted is not "Pending" when accept is true
-    history_referrals = []
+    history_received_referrals = []
     for ref in all_received_referrals:
         accept_value = ref.get('accept')
         deal_status = ref.get('deal_accepted')
@@ -828,7 +868,27 @@ def history():
         
         # Add to history if accept is false OR (accept is true AND deal_accepted is not "Pending")
         if not is_accepted or (is_accepted and not is_pending):
-            history_referrals.append(ref)
+            history_received_referrals.append(ref)
+    
+    # Get all sent referrals
+    all_sent_referrals = get_referrals_by_user(user_id)
+    all_sent_referrals = ensure_deal_status(all_sent_referrals)
+    
+    # Filter sent referrals to include ones that are rejected or not pending
+    history_sent_referrals = []
+    for ref in all_sent_referrals:
+        accept_value = ref.get('accept')
+        deal_status = ref.get('deal_accepted')
+        
+        # Check if accept is True (could be boolean True or string "true")
+        is_accepted = accept_value is True or (isinstance(accept_value, str) and accept_value.lower() == "true")
+        
+        # Check if deal_accepted is "Pending"
+        is_pending = deal_status == "Pending" or not deal_status
+        
+        # Add to history if accept is false OR (accept is true AND deal_accepted is not "Pending")
+        if not is_accepted or (is_accepted and not is_pending):
+            history_sent_referrals.append(ref)
     
     # Generate CSRF token for AJAX requests
     csrf_token = generate_csrf()
@@ -836,7 +896,8 @@ def history():
     return render_template(
         'history.html', 
         user=user, 
-        history_referrals=history_referrals,
+        history_received_referrals=history_received_referrals,
+        history_sent_referrals=history_sent_referrals,
         csrf_token=csrf_token
     )
 
