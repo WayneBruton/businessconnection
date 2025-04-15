@@ -77,23 +77,81 @@
     
     .attendance-table {
         width: 100%;
-        border-collapse: collapse;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
     }
     
-    .attendance-table th,
-    .attendance-table td {
-        padding: 10px;
-        text-align: left;
-        border-bottom: 1px solid #eee;
+    .attendance-table th, .attendance-table td {
+        vertical-align: middle;
+        padding: 12px 15px;
+        text-align: center;
+        border: none;
     }
     
-    .attendance-table th {
+    .attendance-table thead th {
+        background-color: #f8f9fa;
+        color: #495057;
         font-weight: 600;
-        background-color: #f9f9f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .attendance-table tbody tr {
+        transition: all 0.2s;
+    }
+    
+    .attendance-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
     }
     
     .attendance-table tbody tr:hover {
-        background-color: #f5f5f5;
+        background-color: #f1f4f7;
+    }
+    
+    .attendance-table td .btn {
+        margin: 0 2px;
+    }
+    
+    .attendance-table .count-present {
+        color: #155724;
+        font-weight: 600;
+    }
+    
+    .attendance-table .count-absent {
+        color: #721c24;
+        font-weight: 600;
+    }
+    
+    .attendance-table .count-apologies {
+        color: #856404;
+        font-weight: 600;
+    }
+    
+    .attendance-table .count-late {
+        color: #0c5460;
+        font-weight: 600;
+    }
+    
+    .attendance-table .count-total {
+        color: #1a1a1a;
+        font-weight: 700;
+    }
+    
+    .attendance-table .actions-column {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+    }
+    
+    .attendance-table .date-column {
+        font-weight: 600;
+        color: #495057;
     }
     
     .attendance-status {
@@ -138,15 +196,22 @@
         border: 1px solid #eee;
     }
     
-    .member-name {
+    .member-info {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .member-info h5 {
+        margin-bottom: 0;
+        margin-right: 10px;
         font-weight: 600;
-        margin-bottom: 5px;
     }
     
     .member-status {
         display: flex;
         align-items: center;
-        margin-bottom: 5px;
     }
     
     .member-notes {
@@ -220,6 +285,117 @@
             text-align: center;
         }
     }
+    
+    /* Status Colors */
+    select[name^="status_"] {
+        transition: all 0.3s ease;
+        font-weight: bold;
+    }
+    
+    select[name^="status_"] option {
+        font-weight: normal;
+    }
+    
+    /* Present status - Green */
+    select[name^="status_"][data-value="present"],
+    select[name^="status_"] option[value="present"] {
+        background-color: #d4edda;
+        color: #155724;
+        border-color: #c3e6cb;
+    }
+    
+    /* Absent status - Red */
+    select[name^="status_"][data-value="absent"],
+    select[name^="status_"] option[value="absent"] {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-color: #f5c6cb;
+    }
+    
+    /* Apologies status - Yellow/Amber */
+    select[name^="status_"][data-value="apologies"],
+    select[name^="status_"] option[value="apologies"] {
+        background-color: #fff3cd;
+        color: #856404;
+        border-color: #ffeeba;
+    }
+    
+    /* Late status - Blue */
+    select[name^="status_"][data-value="late"],
+    select[name^="status_"] option[value="late"] {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border-color: #bee5eb;
+    }
+    
+    /* Member card styles */
+    .member-item {
+        border-radius: 8px;
+        margin-bottom: 15px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        border-left-width: 5px;
+        border-left-color: #ccc;
+    }
+    
+    .member-info {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .member-info h5 {
+        margin-bottom: 0;
+        margin-right: 10px;
+        flex: 1;
+    }
+    
+    .member-info small {
+        color: #666;
+        display: block;
+        width: 100%;
+        margin-top: 5px;
+    }
+    
+    .member-status {
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Status indicator dot */
+    .status-dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .status-dot.present { 
+        background-color: #28a745; 
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+    }
+    .status-dot.absent { 
+        background-color: #dc3545; 
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+    }
+    .status-dot.apologies { 
+        background-color: #ffc107; 
+        box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    }
+    .status-dot.late { 
+        background-color: #17a2b8; 
+        box-shadow: 0 0 5px rgba(23, 162, 184, 0.5);
+    }
+    
+    /* Table styles */
+    .table th, .table td {
+        vertical-align: middle;
+    }
 </style>
 
 <div class="dashboard-container">
@@ -254,7 +430,9 @@
                             <div class="member-item">
                                 <div class="member-info">
                                     <h5>{{ member.business_name }}</h5>
-                                    <small>{{ member.first_name }} {{ member.last_name }}</small>
+                                    <div class="member-status">
+                                        <span class="status-dot"></span>
+                                    </div>
                                 </div>
                                 
                                 <div class="form-row">
@@ -285,85 +463,56 @@
         </div>
     </div>
     
-    <!-- Attendance Records -->
-    <div class="card">
+    <!-- Attendance Records Table -->
+    <div class="card mt-4">
         <div class="card-header">
             <h3>Attendance Records</h3>
         </div>
         <div class="card-body">
             {% if attendance_records %}
-                <div class="attendance-records-list">
-                    {% for record in attendance_records %}
-                        <div class="attendance-card">
-                            <div class="attendance-card-header">
-                                <h4 class="attendance-card-title">
-                                    Meeting: {% if record.meeting_date is string %}
-                                        {{ record.meeting_date.split('T')[0] if 'T' in record.meeting_date else record.meeting_date }}
-                                    {% else %}
-                                        {{ record.meeting_date.strftime('%Y-%m-%d') }}
-                                    {% endif %}
-                                </h4>
-                                <div class="attendance-card-actions">
-                                    <a href="{{ url_for('edit_attendance', attendance_id=record._id) }}" class="btn btn-secondary">Edit</a>
-                                    <form method="POST" action="{{ url_for('delete_attendance', attendance_id=record._id) }}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this attendance record?');">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-danger">Delete</button>
-                                    </form>
-                                </div>
-                            </div>
-                            <div class="attendance-card-body">
-                                <!-- Attendance Summary -->
-                                <div class="attendance-summary">
-                                    {% set present_count = record.members|selectattr('status', 'equalto', 'present')|list|length %}
-                                    {% set absent_count = record.members|selectattr('status', 'equalto', 'absent')|list|length %}
-                                    {% set apologies_count = record.members|selectattr('status', 'equalto', 'apologies')|list|length %}
-                                    {% set late_count = record.members|selectattr('status', 'equalto', 'late')|list|length %}
-                                    
-                                    <div class="summary-item">
-                                        <div class="summary-label">Present</div>
-                                        <div class="summary-value">{{ present_count }}</div>
-                                    </div>
-                                    
-                                    <div class="summary-item">
-                                        <div class="summary-label">Absent</div>
-                                        <div class="summary-value">{{ absent_count }}</div>
-                                    </div>
-                                    
-                                    <div class="summary-item">
-                                        <div class="summary-label">Apologies</div>
-                                        <div class="summary-value">{{ apologies_count }}</div>
-                                    </div>
-                                    
-                                    <div class="summary-item">
-                                        <div class="summary-label">Late</div>
-                                        <div class="summary-value">{{ late_count }}</div>
-                                    </div>
-                                    
-                                    <div class="summary-item">
-                                        <div class="summary-label">Total</div>
-                                        <div class="summary-value">{{ record.members|length }}</div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Member List -->
-                                <div class="attendance-member-list">
-                                    {% for member in record.members %}
-                                        <div class="attendance-member-item">
-                                            <div class="member-name">{{ member.business_name }}</div>
-                                            <div class="member-status">
-                                                <span class="attendance-status status-{{ member.status }}">
-                                                    {{ member.status|capitalize }}
-                                                </span>
-                                            </div>
-                                            {% if member.notes %}
-                                                <div class="member-notes">{{ member.notes }}</div>
-                                            {% endif %}
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
+                <div class="table-responsive">
+                    <table class="attendance-table table-striped">
+                        <thead>
+                            <tr>
+                                <th class="date-column">Meeting Date</th>
+                                <th>Present</th>
+                                <th>Absent</th>
+                                <th>Apologies</th>
+                                <th>Late</th>
+                                <th>Total</th>
+                                <th class="actions-column">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_records %}
+                                {% set present_count = record.members|selectattr('status', 'equalto', 'present')|list|length %}
+                                {% set absent_count = record.members|selectattr('status', 'equalto', 'absent')|list|length %}
+                                {% set apologies_count = record.members|selectattr('status', 'equalto', 'apologies')|list|length %}
+                                {% set late_count = record.members|selectattr('status', 'equalto', 'late')|list|length %}
+                                <tr>
+                                    <td class="date-column">
+                                        {% if record.meeting_date is string %}
+                                            {{ record.meeting_date.split('T')[0] if 'T' in record.meeting_date else record.meeting_date }}
+                                        {% else %}
+                                            {{ record.meeting_date.strftime('%Y-%m-%d') }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="count-present">{{ present_count }}</td>
+                                    <td class="count-absent">{{ absent_count }}</td>
+                                    <td class="count-apologies">{{ apologies_count }}</td>
+                                    <td class="count-late">{{ late_count }}</td>
+                                    <td class="count-total">{{ record.members|length }}</td>
+                                    <td class="actions-column">
+                                        <a href="{{ url_for('edit_attendance', attendance_id=record._id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <form method="POST" action="{{ url_for('delete_attendance', attendance_id=record._id) }}" class="delete-form d-inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             {% else %}
                 <p class="no-records">No attendance records found.</p>
@@ -373,272 +522,347 @@
 </div>
 
 <script>
-    // JavaScript to handle date selection and check for existing records
+    // JavaScript to handle attendance tracking
     document.addEventListener('DOMContentLoaded', function() {
         const meetingDateInput = document.getElementById('meeting_date');
-        console.log("Attendance page initialization started");
+        const submitButton = document.querySelector('button[type="submit"]');
+        const allStatusSelects = document.querySelectorAll('select[name^="status_"]');
+        const allNotesInputs = document.querySelectorAll('input[name^="notes_"]');
         
-        // Function to fetch attendance data for a selected date
-        async function checkExistingAttendance(selectedDate) {
+        console.log("Attendance page initialization started");
+        console.log(`Found ${allStatusSelects.length} status selects and ${allNotesInputs.length} notes inputs`);
+        
+        // Function to set all members to "present" by default
+        function setAllToPresent() {
+            allStatusSelects.forEach(select => {
+                select.value = 'present';
+            });
+            console.log("Set all members to Present by default");
+        }
+        
+        // Initially set all to present
+        setAllToPresent();
+        
+        // Function to check if record exists for a date
+        async function checkExistingRecord(date) {
             try {
-                // Add cache-busting timestamp and force fresh response
-                const timestamp = new Date().getTime();
-                console.log(`Checking attendance for date: ${selectedDate} (timestamp: ${timestamp})`);
-                
-                // Use a timeout to ensure we get a fresh response
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                // Make AJAX request with cache prevention headers
-                const response = await fetch(`/check_attendance_date?date=${selectedDate}&nocache=${timestamp}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    },
-                    cache: 'no-store',
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                if (response.ok) {
-                    const text = await response.text();
-                    console.log('Raw API Response:', text);
-                    try {
-                        const data = JSON.parse(text);
-                        console.log('Parsed API Response:', data);
-                        return data;
-                    } catch (parseError) {
-                        console.error('Error parsing response:', parseError);
-                        console.error('Response text was:', text);
-                        return null;
-                    }
-                } else {
-                    console.error('Error checking attendance date:', response.statusText);
-                    return null;
-                }
+                console.log(`Checking for existing record on date: ${date}`);
+                const response = await fetch(`/check_attendance_date?date=${date}&t=${new Date().getTime()}`);
+                const data = await response.json();
+                console.log("Received record data:", data);
+                return data;
             } catch (error) {
-                console.error('Error checking attendance date:', error);
-                return null;
+                console.error("Error checking attendance record:", error);
+                return { success: false };
             }
         }
         
-        // Function to completely rebuild the form with the correct attendance data
-        function rebuildFormWithAttendanceData(data) {
-            if (!data || !data.record || !data.record.members) {
-                console.log('No valid record data to update form with');
+        // Function to load existing data
+        function loadExistingData(data) {
+            if (!data.success || !data.exists || !data.record || !data.record.members) {
+                console.log("No valid record data to load");
                 return;
             }
             
-            console.log('Rebuilding form with attendance data:', data.record);
+            console.log(`Loading data for ${data.record.members.length} members`);
             
-            // Create a map for quick lookup of member data by business name
-            const memberDataMap = {};
+            // Create a map for quick lookup
+            const memberMap = {};
             data.record.members.forEach(member => {
-                memberDataMap[member.business_name] = member;
-                console.log(`Added to map: ${member.business_name} with status: ${member.status}`);
+                memberMap[member.business_name] = member;
             });
             
             // Find all member sections
             const memberSections = document.querySelectorAll('.member-item');
-            console.log(`Found ${memberSections.length} member sections in the form`);
             
             // Process each member section
             memberSections.forEach(section => {
-                const businessNameElement = section.querySelector('h5');
-                if (!businessNameElement) return;
+                const businessNameEl = section.querySelector('h5');
+                if (!businessNameEl) return;
                 
-                const businessName = businessNameElement.textContent.trim();
-                console.log(`Processing section for: ${businessName}`);
+                const businessName = businessNameEl.textContent.trim();
+                const memberData = memberMap[businessName];
                 
-                // Find existing status select
-                const statusSelectContainer = section.querySelector('.form-group');
-                if (!statusSelectContainer) return;
-                
-                // Get member data if it exists
-                const memberData = memberDataMap[businessName];
                 if (!memberData) {
                     console.log(`No data found for ${businessName}`);
                     return;
                 }
                 
-                console.log(`Found member data for ${businessName}: status=${memberData.status}`);
-                
-                // Force-create new select element
-                const existingSelect = statusSelectContainer.querySelector('select[name^="status_"]');
-                if (!existingSelect) {
-                    console.warn(`No select element found for ${businessName}`);
-                    return;
+                // Update status dropdown
+                const statusSelect = section.querySelector('select[name^="status_"]');
+                if (statusSelect && memberData.status) {
+                    statusSelect.value = memberData.status;
+                    console.log(`Set ${businessName} status to ${memberData.status}`);
                 }
                 
-                const selectId = existingSelect.id;
-                const selectName = existingSelect.name;
+                // Update notes
+                const notesInput = section.querySelector('input[name^="notes_"]');
+                if (notesInput && memberData.notes) {
+                    notesInput.value = memberData.notes;
+                    console.log(`Set ${businessName} notes to: ${memberData.notes}`);
+                }
+            });
+            
+            // Remove the submit button if record exists
+            if (submitButton) {
+                const formGroup = submitButton.parentElement;
+                formGroup.innerHTML = '<div class="alert alert-info mt-3">This attendance record already exists. Changes to status and notes are saved automatically.</div>';
+                console.log("Removed submit button since record exists");
+            }
+        }
+        
+        // Function to save changes in real-time
+        async function saveAttendanceItem(businessName, status, notes, element) {
+            if (!meetingDateInput.value) {
+                console.error("No meeting date selected!");
+                return;
+            }
+            
+            // Add visual indicator
+            const indicator = document.createElement('span');
+            indicator.textContent = "⏳";
+            indicator.style.marginLeft = "5px";
+            element.parentNode.appendChild(indicator);
+            
+            try {
+                console.log(`Saving ${businessName}: status=${status}, notes=${notes}`);
                 
-                // Create replacement select element
-                const newSelect = document.createElement('select');
-                newSelect.id = selectId;
-                newSelect.name = selectName;
-                newSelect.className = 'form-control database-value';
+                // Get the CSRF token from the hidden input
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                console.log("Using CSRF token:", csrfToken);
                 
-                // Create options
-                const options = [
-                    { value: 'present', text: 'Present' },
-                    { value: 'absent', text: 'Absent' },
-                    { value: 'apologies', text: 'Apologies' },
-                    { value: 'late', text: 'Late' }
-                ];
+                // Create request data
+                const requestData = {
+                    meeting_date: meetingDateInput.value,
+                    business_name: businessName,
+                    status: status,
+                    notes: notes,
+                    csrf_token: csrfToken
+                };
                 
-                options.forEach(opt => {
-                    const option = document.createElement('option');
-                    option.value = opt.value;
-                    option.textContent = opt.text;
-                    if (opt.value === memberData.status) {
-                        option.selected = true;
-                        console.log(`Setting ${businessName} option ${opt.value} to selected`);
-                    }
-                    newSelect.appendChild(option);
+                console.log("Sending data:", JSON.stringify(requestData));
+                
+                const response = await fetch('/update_attendance_item', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(requestData)
                 });
                 
-                // Special styling for specific cases
-                if (memberData.status === 'absent') {
-                    newSelect.style.backgroundColor = '#ffdddd';
-                    newSelect.style.borderColor = '#ff6666';
-                    newSelect.style.color = '#cc0000';
-                    newSelect.style.fontWeight = 'bold';
+                console.log("Fetch response status:", response.status);
+                const result = await response.json();
+                console.log("Save result:", result);
+                
+                // Update the indicator based on result
+                if (result.success) {
+                    indicator.textContent = "✅";
+                    setTimeout(() => {
+                        if (indicator.parentNode) {
+                            indicator.parentNode.removeChild(indicator);
+                        }
+                    }, 2000);
+                    
+                    // Try to update the table row if it exists
+                    const tableRows = document.querySelectorAll('table tbody tr');
+                    tableRows.forEach(row => {
+                        const dateCell = row.querySelector('td:first-child');
+                        if (dateCell && dateCell.textContent.includes(meetingDateInput.value)) {
+                            console.log("Updating table row for this date");
+                            // Refresh the row data
+                            checkExistingRecord(meetingDateInput.value).then(data => {
+                                if (data.success && data.exists) {
+                                    const members = data.record.members || [];
+                                    const presentCount = members.filter(m => m.status === 'present').length;
+                                    const absentCount = members.filter(m => m.status === 'absent').length;
+                                    const apologiesCount = members.filter(m => m.status === 'apologies').length;
+                                    const lateCount = members.filter(m => m.status === 'late').length;
+                                    
+                                    const cells = row.querySelectorAll('td');
+                                    if (cells.length >= 6) {
+                                        cells[1].textContent = presentCount;
+                                        cells[2].textContent = absentCount;
+                                        cells[3].textContent = apologiesCount; 
+                                        cells[4].textContent = lateCount;
+                                        cells[5].textContent = members.length;
+                                    }
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    indicator.textContent = "❌";
+                    indicator.style.color = "red";
+                    setTimeout(() => {
+                        if (indicator.parentNode) {
+                            indicator.parentNode.removeChild(indicator);
+                        }
+                    }, 2000);
+                    console.error("Error saving attendance:", result.message);
                 }
-                
-                // Replace old select with new one
-                existingSelect.parentNode.replaceChild(newSelect, existingSelect);
-                
-                // Update notes if they exist
-                if (memberData.notes) {
-                    const notesInput = section.querySelector('input[name^="notes_"]');
-                    if (notesInput) {
-                        notesInput.value = memberData.notes;
-                        notesInput.style.backgroundColor = '#e8f7ff';
-                        notesInput.style.borderColor = '#007bff';
+            } catch (error) {
+                console.error("Error saving attendance:", error);
+                indicator.textContent = "❌";
+                indicator.style.color = "red";
+                setTimeout(() => {
+                    if (indicator.parentNode) {
+                        indicator.parentNode.removeChild(indicator);
+                    }
+                }, 2000);
+            }
+        }
+        
+        // Function to update the status select styling
+        function updateStatusStyle(select) {
+            // Remove previous styling
+            select.removeAttribute('data-value');
+            select.style.backgroundColor = '';
+            select.style.color = '';
+            select.style.borderColor = '';
+            
+            // Get the current value
+            const status = select.value;
+            
+            // Set data attribute for CSS targeting
+            select.setAttribute('data-value', status);
+            
+            // Apply inline styles for immediate effect
+            if (status === 'present') {
+                select.style.backgroundColor = '#d4edda';
+                select.style.color = '#155724';
+                select.style.borderColor = '#c3e6cb';
+            } else if (status === 'absent') {
+                select.style.backgroundColor = '#f8d7da';
+                select.style.color = '#721c24';
+                select.style.borderColor = '#f5c6cb';
+            } else if (status === 'apologies') {
+                select.style.backgroundColor = '#fff3cd';
+                select.style.color = '#856404';
+                select.style.borderColor = '#ffeeba';
+            } else if (status === 'late') {
+                select.style.backgroundColor = '#d1ecf1';
+                select.style.color = '#0c5460';
+                select.style.borderColor = '#bee5eb';
+            }
+            
+            // Update the status dot in the member card
+            const memberItem = select.closest('.member-item');
+            if (memberItem) {
+                const statusDot = memberItem.querySelector('.status-dot');
+                if (statusDot) {
+                    // Remove all status classes
+                    statusDot.classList.remove('present', 'absent', 'apologies', 'late');
+                    // Add the current status class
+                    statusDot.classList.add(status);
+                    
+                    // Also update the entire member card border color subtly
+                    memberItem.style.borderLeftWidth = '5px';
+                    
+                    if (status === 'present') {
+                        memberItem.style.borderLeftColor = '#28a745';
+                    } else if (status === 'absent') {
+                        memberItem.style.borderLeftColor = '#dc3545';
+                    } else if (status === 'apologies') {
+                        memberItem.style.borderLeftColor = '#ffc107';
+                    } else if (status === 'late') {
+                        memberItem.style.borderLeftColor = '#17a2b8';
                     }
                 }
-            });
-        }
-        
-        // Function to reset form fields
-        function resetFormFields() {
-            // Reset all selects
-            document.querySelectorAll('select[name^="status_"]').forEach(select => {
-                select.value = 'present';
-                select.style.backgroundColor = '';
-                select.style.borderColor = '';
-                select.style.color = '';
-                select.style.fontWeight = '';
-            });
-            
-            // Reset all inputs
-            document.querySelectorAll('input[name^="notes_"]').forEach(input => {
-                input.value = '';
-                input.style.backgroundColor = '';
-                input.style.borderColor = '';
-            });
-        }
-        
-        // Function to force a complete refresh of the form
-        async function forceRefreshFormData() {
-            const selectedDate = meetingDateInput.value;
-            if (!selectedDate) return;
-            
-            // First reset
-            resetFormFields();
-            
-            // Force browser to fetch fresh data
-            const cacheKey = `attendance_${selectedDate}_${new Date().getTime()}`;
-            localStorage.setItem('force_refresh_key', cacheKey);
-            
-            // Check for existing data with fresh request
-            console.log(`Performing forced refresh for date: ${selectedDate}`);
-            const data = await checkExistingAttendance(selectedDate);
-            
-            if (data && data.exists && data.record) {
-                console.log('Found existing record on forced refresh:', data.record);
-                
-                // Small delay to ensure DOM is ready
-                setTimeout(() => {
-                    rebuildFormWithAttendanceData(data);
-                    console.log('Form rebuilt after forced refresh');
-                }, 300);
-            } else {
-                console.log('No existing record found after forced refresh');
             }
         }
         
-        // Set up date input change handler
-        if (meetingDateInput) {
-            meetingDateInput.addEventListener('change', async function() {
-                const selectedDate = this.value;
-                console.log('Date selected:', selectedDate);
+        // Function to setup event listeners
+        function setupEventListeners() {
+            // Process each member section
+            const memberSections = document.querySelectorAll('.member-item');
+            
+            memberSections.forEach(section => {
+                const businessNameEl = section.querySelector('h5');
+                if (!businessNameEl) return;
                 
-                if (!selectedDate) return;
+                const businessName = businessNameEl.textContent.trim();
+                const statusSelect = section.querySelector('select[name^="status_"]');
+                const notesInput = section.querySelector('input[name^="notes_"]');
                 
-                // Reset form first
-                resetFormFields();
+                // Initialize the status style
+                if (statusSelect) {
+                    updateStatusStyle(statusSelect);
                 
-                // Check for existing record
-                const data = await checkExistingAttendance(selectedDate);
-                if (data && data.exists && data.record) {
-                    console.log('Found existing record:', data.record);
-                    
-                    // Use setTimeout to ensure the DOM has time to update
-                    setTimeout(() => {
-                        rebuildFormWithAttendanceData(data);
-                    }, 100);
-                } else {
-                    console.log('No existing record found for date:', selectedDate);
+                    // Add event listener to status select
+                    statusSelect.addEventListener('change', function() {
+                        const currentStatus = this.value;
+                        const currentNotes = notesInput ? notesInput.value : '';
+                        
+                        // Update the styling
+                        updateStatusStyle(this);
+                        
+                        console.log(`Status changed for ${businessName} to ${currentStatus}`);
+                        saveAttendanceItem(businessName, currentStatus, currentNotes, this);
+                    });
+                }
+                
+                // Add event listener to notes input with debounce
+                if (notesInput) {
+                    let timeout = null;
+                    notesInput.addEventListener('input', function() {
+                        clearTimeout(timeout);
+                        
+                        timeout = setTimeout(() => {
+                            const currentNotes = this.value;
+                            const currentStatus = statusSelect ? statusSelect.value : 'present';
+                            console.log(`Notes changed for ${businessName} to: ${currentNotes}`);
+                            saveAttendanceItem(businessName, currentStatus, currentNotes, this);
+                        }, 500); // 500ms debounce
+                    });
                 }
             });
-            
-            // Trigger check on page load if date is already set
-            if (meetingDateInput.value) {
-                console.log('Date already set on page load:', meetingDateInput.value);
-                
-                // Delay slightly to ensure page is fully loaded
-                setTimeout(() => {
-                    meetingDateInput.dispatchEvent(new Event('change'));
-                }, 500);
-            }
         }
         
-        // Add a refresh button to the form
-        const form = document.querySelector('form[action*="create_attendance"]');
-        if (form) {
-            // Remove any existing refresh buttons first
-            const existingRefreshButton = form.querySelector('.refresh-button');
-            if (existingRefreshButton) {
-                existingRefreshButton.remove();
-            }
+        // Handle date selection
+        meetingDateInput.addEventListener('change', async function() {
+            const selectedDate = this.value;
+            console.log(`Date selected: ${selectedDate}`);
             
-            const refreshButton = document.createElement('button');
-            refreshButton.type = 'button';
-            refreshButton.className = 'btn btn-warning refresh-button';
-            refreshButton.style.marginRight = '10px';
-            refreshButton.textContent = '🔄 Refresh';
+            if (!selectedDate) return;
             
-            refreshButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                forceRefreshFormData();
-            });
-            
-            // Find submit button
-            const submitButton = form.querySelector('button[type="submit"]');
+            // Reset form state
             if (submitButton) {
-                // Insert before submit button
-                submitButton.parentNode.insertBefore(refreshButton, submitButton);
-            } else {
-                // Or append to form
-                form.appendChild(refreshButton);
+                submitButton.style.display = 'block';
+                const formGroup = submitButton.parentElement;
+                const infoMessage = formGroup.querySelector('.alert');
+                if (infoMessage) {
+                    formGroup.removeChild(infoMessage);
+                }
             }
+            
+            // Set defaults for new record
+            setAllToPresent();
+            
+            // Check if record exists
+            const data = await checkExistingRecord(selectedDate);
+            
+            if (data.success) {
+                if (data.exists) {
+                    console.log("Found existing record, loading data...");
+                    loadExistingData(data);
+                } else {
+                    console.log("No existing record found, using defaults");
+                }
+            }
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+        
+        // Initialize
+        if (meetingDateInput.value) {
+            console.log("Initial date is set, checking for record...");
+            meetingDateInput.dispatchEvent(new Event('change'));
+        } else {
+            console.log("No initial date set, setting up listeners only");
+            setupEventListeners();
         }
     });
 </script>

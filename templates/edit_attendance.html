@@ -53,6 +53,35 @@
         margin: 0 0 5px 0;
     }
     
+    /* Attendance Status Highlighting */
+    .attendance-status-present {
+        background-color: #d4edda;
+        color: #155724;
+        font-weight: bold;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        display: inline-block;
+    }
+    .attendance-status-absent {
+        background-color: #f8d7da;
+        color: #721c24;
+        font-weight: bold;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        display: inline-block;
+    }
+    .attendance-status-apologies {
+        background-color: #fff3cd;
+        color: #856404;
+        font-weight: bold;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        display: inline-block;
+    }
+    
     @media (max-width: 768px) {
         .form-row {
             flex-direction: column;
@@ -114,6 +143,11 @@
                                 
                                 <div class="form-row">
                                     <div class="form-group">
+                                        {% if member_data %}
+                                            <div class="attendance-status-{{ member_data.status|lower }}">
+                                                {{ member_data.status|capitalize }}
+                                            </div>
+                                        {% endif %}
                                         <label class="form-label">Attendance Status</label>
                                         <select name="status_{{ member_user._id }}" class="form-control">
                                             <option value="present" {% if member_data and member_data.status == 'present' %}selected{% endif %}>Present</option>

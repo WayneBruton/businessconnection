@@ -1131,11 +1131,6 @@ def update_attendance(attendance_id):
                 'notes': notes
             })
         
-        # Debug output to verify data
-        print(f"Updating attendance record {attendance_id} with {len(members)} members")
-        for member in members:
-            print(f"  {member['business_name']}: {member['status']}")
-        
         # Update the record
         success = update_attendance_record(attendance_id, meeting_date, members)
         
@@ -1240,6 +1235,125 @@ def check_attendance_date():
             
     except Exception as e:
         print(f"Error checking attendance date: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/update_attendance_item', methods=['POST'])
+@csrf.exempt
+@login_required
+def update_attendance_item():
+    """
+    API endpoint to update a single attendance item in real-time.
+    This allows for immediate updates when a dropdown or note is changed.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can update attendance data
+    if not user or user.get('business_name') != 'Admin':
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        # Print the raw request data for debugging
+        print("Raw request data:", request.data)
+        data = request.get_json()
+        print("Parsed JSON data:", data)
+        
+        # Required fields
+        meeting_date = data.get('meeting_date')
+        business_name = data.get('business_name')
+        status = data.get('status')
+        notes = data.get('notes', '')
+        
+        print(f"Updating attendance for {business_name} on {meeting_date}: status={status}, notes={notes}")
+        
+        if not meeting_date or not business_name or not status:
+            return jsonify({'success': False, 'message': 'Missing required fields'}), 400
+        
+        # Check if a record exists for this date
+        record = get_attendance_record_by_date(meeting_date)
+        
+        if record:
+            # Update existing record
+            record_id = str(record['_id'])
+            members = record.get('members', [])
+            
+            # Find the member to update
+            member_updated = False
+            for member in members:
+                if member.get('business_name') == business_name:
+                    # Update the member data
+                    member['status'] = status
+                    member['notes'] = notes
+                    member_updated = True
+                    print(f"Found and updated member {business_name}")
+                    break
+            
+            if not member_updated:
+                # Member not found, add them
+                members.append({
+                    'business_name': business_name,
+                    'status': status,
+                    'notes': notes
+                })
+                print(f"Added new member {business_name} to record")
+            
+            # Update the record
+            success = update_attendance_record(record_id, meeting_date, members)
+            
+            if success:
+                print(f"Successfully updated attendance record {record_id}")
+                return jsonify({
+                    'success': True,
+                    'message': 'Attendance updated successfully',
+                    'timestamp': datetime.now().timestamp()
+                })
+            else:
+                print(f"Failed to update attendance record {record_id}")
+                return jsonify({'success': False, 'message': 'Failed to update attendance'}), 500
+        else:
+            # Create new record with this member
+            members = [{
+                'business_name': business_name,
+                'status': status,
+                'notes': notes
+            }]
+            
+            # Get all users to add with default values
+            all_users = get_all_enabled_users()
+            for user_data in all_users:
+                user_business_name = user_data.get('business_name')
+                
+                # Skip the one we're already updating
+                if user_business_name == business_name:
+                    continue
+                
+                # Add with default 'present' status
+                members.append({
+                    'business_name': user_business_name,
+                    'status': 'present',
+                    'notes': ''
+                })
+            
+            # Create the new record
+            record_id = create_attendance_record(meeting_date, members)
+            
+            if record_id:
+                print(f"Created new attendance record {record_id} for date {meeting_date}")
+                return jsonify({
+                    'success': True,
+                    'message': 'New attendance record created',
+                    'record_id': str(record_id),
+                    'timestamp': datetime.now().timestamp()
+                })
+            else:
+                print("Failed to create new attendance record")
+                return jsonify({'success': False, 'message': 'Failed to create attendance record'}), 500
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Error updating attendance item: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':

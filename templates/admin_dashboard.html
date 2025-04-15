@@ -58,6 +58,26 @@
         background-color: #27ae60;
     }
     
+    .btn-info {
+        background-color: #03A9F4;
+        color: white;
+        border: 1px solid #039BE5;
+    }
+    
+    .btn-info:hover {
+        background-color: #039BE5;
+    }
+    
+    .btn-purple {
+        background-color: #8e44ad;
+        color: white;
+        border: 1px solid #7d3c98;
+    }
+    
+    .btn-purple:hover {
+        background-color: #7d3c98;
+    }
+    
     .table {
         width: 100%;
         border-collapse: collapse;
@@ -341,7 +361,7 @@
         <h1>Admin Dashboard - {{ user.first_name }}</h1>
         <div class="admin-actions">
             <a href="{{ url_for('register') }}" class="btn btn-primary">Register New User</a>
-            <a href="{{ url_for('attendance') }}" class="btn btn-success">Attendance Tracking</a>
+            <a href="{{ url_for('attendance') }}" class="btn btn-purple">Attendance Tracking</a>
             <a href="https://docs.google.com/spreadsheets/d/1sIJgF23REf3rWLn-Pi1xQKxkoECM1QG343Z19NLQmoY/edit?gid=1673198467#gid=1673198467" class="btn btn-success" target="_blank">View Referrals</a>
             <!-- <a href="{{ url_for('edit_user') }}" class="btn btn-secondary">Edit User</a> -->
             <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
