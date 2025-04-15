@@ -341,6 +341,7 @@
         <h1>Admin Dashboard - {{ user.first_name }}</h1>
         <div class="admin-actions">
             <a href="{{ url_for('register') }}" class="btn btn-primary">Register New User</a>
+            <a href="{{ url_for('attendance') }}" class="btn btn-success">Attendance Tracking</a>
             <a href="https://docs.google.com/spreadsheets/d/1sIJgF23REf3rWLn-Pi1xQKxkoECM1QG343Z19NLQmoY/edit?gid=1673198467#gid=1673198467" class="btn btn-success" target="_blank">View Referrals</a>
             <!-- <a href="{{ url_for('edit_user') }}" class="btn btn-secondary">Edit User</a> -->
             <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>

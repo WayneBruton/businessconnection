@@ -16,6 +16,7 @@ client = MongoClient(os.getenv('MONGODB_URI'), tlsCAFile=certifi.where())
 db = client[os.getenv('DB')]
 users_collection = db['users']
 referrals_collection = db['referrals']
+attendance_collection = db['attendance']  # New collection for attendance
 
 # Create unique index on email field
 users_collection.create_index('email', unique=True)
@@ -393,31 +394,194 @@ def get_filtered_referrals_to_business(business_name, accept=None, deal_accepted
     If accept or deal_accepted is None, no filtering is applied for that field.
     """
     try:
-        print(f"Searching for filtered referrals to business: '{business_name}'")
-        print(f"Filters - accept: {accept}, deal_accepted: {deal_accepted}")
+        # Start with a base query for the business
+        query = {"to_business": business_name}
         
-        # First get all referrals to the business
-        all_referrals = get_referrals_to_business(business_name)
+        # Add accept filter if specified
+        if accept is not None:
+            query["accept"] = accept
         
-        # Apply filters
-        filtered_referrals = []
-        for referral in all_referrals:
-            # Check accept filter if specified
-            if accept is not None and referral.get('accept') != accept:
-                continue
-                
-            # Check deal_accepted filter if specified
-            if deal_accepted is not None:
-                if deal_accepted == "not_pending" and referral.get('deal_accepted') == "Pending":
-                    continue
-                elif deal_accepted != "not_pending" and referral.get('deal_accepted') != deal_accepted:
-                    continue
-            
-            # If we got here, the referral passed all filters
-            filtered_referrals.append(referral)
+        # Add deal_accepted filter if specified
+        if deal_accepted is not None:
+            query["deal_accepted"] = deal_accepted
         
-        print(f"Found {len(filtered_referrals)} referrals after filtering")
-        return filtered_referrals
+        # Run the query
+        referrals = list(referrals_collection.find(query).sort("created_at", -1))
+        
+        return referrals
     except Exception as e:
-        print(f"Error getting filtered referrals to business: {e}")
+        print(f"Error getting filtered referrals: {e}")
         return []
+
+# Attendance Management Functions
+def create_attendance_record(meeting_date, members):
+    """
+    Create a new attendance record.
+    
+    Parameters:
+    - meeting_date: The date of the meeting (date object or string in YYYY-MM-DD format)
+    - members: List of dictionaries with business_name, status, and notes
+    
+    Returns: ID of the created record, None if an error occurred, or existing record ID if date already exists
+    """
+    try:
+        # Normalize date (strip time component if datetime)
+        if isinstance(meeting_date, datetime):
+            meeting_date = meeting_date.date()
+        elif isinstance(meeting_date, str):
+            # If string has time component, strip it
+            if 'T' in meeting_date or ' ' in meeting_date:
+                meeting_date = datetime.strptime(meeting_date.split('T')[0].split(' ')[0], '%Y-%m-%d').date()
+            else:
+                meeting_date = datetime.strptime(meeting_date, '%Y-%m-%d').date()
+        
+        # Check if a record already exists for this date
+        existing_record = attendance_collection.find_one({"meeting_date": meeting_date.isoformat()})
+        if existing_record:
+            return str(existing_record["_id"])
+        
+        attendance = {
+            "meeting_date": meeting_date.isoformat(),
+            "members": members,
+            "created_at": datetime.utcnow()
+        }
+        
+        result = attendance_collection.insert_one(attendance)
+        return str(result.inserted_id) if result.inserted_id else None
+    except Exception as e:
+        print(f"Error creating attendance record: {e}")
+        return None
+
+def get_attendance_records(start_date=None, end_date=None):
+    """
+    Get attendance records, optionally filtered by date range.
+    
+    Parameters:
+    - start_date: Optional start date filter (inclusive)
+    - end_date: Optional end date filter (inclusive)
+    
+    Returns: List of attendance records sorted by meeting date (newest first)
+    """
+    try:
+        query = {}
+        
+        # Add date range filters if provided
+        if start_date or end_date:
+            query["meeting_date"] = {}
+            
+            if start_date:
+                if isinstance(start_date, datetime):
+                    start_date = start_date.date().isoformat()
+                query["meeting_date"]["$gte"] = start_date
+                
+            if end_date:
+                if isinstance(end_date, datetime):
+                    end_date = end_date.date().isoformat()
+                query["meeting_date"]["$lte"] = end_date
+        
+        # Retrieve and sort attendance records
+        records = list(attendance_collection.find(query).sort("meeting_date", -1))
+        return records
+    except Exception as e:
+        print(f"Error retrieving attendance records: {e}")
+        return []
+
+def get_attendance_record_by_date(meeting_date):
+    """
+    Get an attendance record by its date.
+    
+    Parameters:
+    - meeting_date: The date of the meeting to retrieve (date object or string in YYYY-MM-DD format)
+    
+    Returns: The attendance record or None if not found
+    """
+    try:
+        # Normalize date
+        if isinstance(meeting_date, datetime):
+            meeting_date = meeting_date.date().isoformat()
+        elif isinstance(meeting_date, str):
+            # If string has time component, strip it
+            if 'T' in meeting_date or ' ' in meeting_date:
+                meeting_date = datetime.strptime(meeting_date.split('T')[0].split(' ')[0], '%Y-%m-%d').date().isoformat()
+        
+        record = attendance_collection.find_one({"meeting_date": meeting_date})
+        return record
+    except Exception as e:
+        print(f"Error retrieving attendance record by date: {e}")
+        return None
+
+def get_attendance_record_by_id(attendance_id):
+    """
+    Get an attendance record by its ID.
+    
+    Parameters:
+    - attendance_id: The ID of the attendance record to retrieve
+    
+    Returns: The attendance record or None if not found
+    """
+    try:
+        from bson.objectid import ObjectId
+        record = attendance_collection.find_one({"_id": ObjectId(attendance_id)})
+        return record
+    except Exception as e:
+        print(f"Error retrieving attendance record by ID: {e}")
+        return None
+
+def update_attendance_record(attendance_id, meeting_date=None, members=None):
+    """
+    Update an attendance record.
+    
+    Parameters:
+    - attendance_id: The ID of the attendance record to update
+    - meeting_date: The new meeting date (optional)
+    - members: The new members list (optional)
+    
+    Returns: True if update successful, False otherwise
+    """
+    try:
+        from bson.objectid import ObjectId
+        
+        # Prepare update document
+        update_doc = {"$set": {"updated_at": datetime.utcnow()}}
+        
+        if meeting_date:
+            # Normalize date
+            if isinstance(meeting_date, datetime):
+                meeting_date = meeting_date.date().isoformat()
+            elif isinstance(meeting_date, str):
+                # If string has time component, strip it
+                if 'T' in meeting_date or ' ' in meeting_date:
+                    meeting_date = datetime.strptime(meeting_date.split('T')[0].split(' ')[0], '%Y-%m-%d').date().isoformat()
+            
+            update_doc["$set"]["meeting_date"] = meeting_date
+            
+        if members:
+            update_doc["$set"]["members"] = members
+        
+        # Perform update
+        result = attendance_collection.update_one(
+            {"_id": ObjectId(attendance_id)},
+            update_doc
+        )
+        
+        return result.modified_count > 0
+    except Exception as e:
+        print(f"Error updating attendance record: {e}")
+        return False
+
+def delete_attendance_record(attendance_id):
+    """
+    Delete an attendance record.
+    
+    Parameters:
+    - attendance_id: The ID of the attendance record to delete
+    
+    Returns: True if deletion successful, False otherwise
+    """
+    try:
+        from bson.objectid import ObjectId
+        result = attendance_collection.delete_one({"_id": ObjectId(attendance_id)})
+        return result.deleted_count > 0
+    except Exception as e:
+        print(f"Error deleting attendance record: {e}")
+        return False

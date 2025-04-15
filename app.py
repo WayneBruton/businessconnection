@@ -9,7 +9,8 @@ from database import (
     generate_jwt_token, decode_jwt_token, get_user_by_id,
     create_referral, get_referrals_by_user, get_all_enabled_users, get_referral_by_id,
     get_all_enabled_notifiable_users, get_referrals_to_business, get_user_by_business_name, users_collection,
-    referrals_collection, get_filtered_referrals_to_business
+    referrals_collection, get_filtered_referrals_to_business, create_attendance_record, get_attendance_records,
+    get_attendance_record_by_id, update_attendance_record, delete_attendance_record, get_attendance_record_by_date
 )
 from datetime import datetime
 import requests 
@@ -953,6 +954,293 @@ def update_talks():
     except Exception as e:
         print(f"Error updating talks: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/attendance', methods=['GET'])
+@login_required
+def attendance():
+    """
+    Display attendance records and provide interface for tracking attendance.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can view this page
+    if not user or user.get('business_name') != 'Admin':
+        flash('Access denied. You must be an Admin to view this page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Get attendance records
+    attendance_records = get_attendance_records()
+    
+    # Get all users for attendance form
+    all_users = get_all_enabled_users()
+    
+    return render_template(
+        'attendance.html',
+        user=user,
+        attendance_records=attendance_records,
+        all_users=all_users
+    )
+
+@app.route('/create_attendance', methods=['POST'])
+@login_required
+def create_attendance():
+    """
+    Create a new attendance record.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can create attendance records
+    if not user or user.get('business_name') != 'Admin':
+        return jsonify({'success': False, 'message': 'Access denied. Admin only.'}), 403
+    
+    try:
+        # Get form data
+        meeting_date = request.form.get('meeting_date')
+        
+        # Check if date is valid
+        if not meeting_date:
+            return jsonify({'success': False, 'message': 'Meeting date is required'}), 400
+            
+        # Check if a record already exists for this date
+        existing_record = get_attendance_record_by_date(meeting_date)
+        if existing_record:
+            # Redirect to edit the existing record
+            flash('An attendance record for this date already exists. You can edit it below.', 'info')
+            return redirect(url_for('edit_attendance', attendance_id=str(existing_record['_id'])))
+        
+        # Get all users and their attendance status
+        members = []
+        all_users = get_all_enabled_users()
+        
+        for user_data in all_users:
+            business_name = user_data.get('business_name')
+            business_id = str(user_data.get('_id'))
+            
+            # Get status for this user
+            status = request.form.get(f'status_{business_id}', 'absent')
+            
+            # Get notes for this user if any
+            notes = request.form.get(f'notes_{business_id}', '')
+            
+            # Debug output
+            print(f"Processing attendance for {business_name} - Status: {status}")
+            
+            # Add to members list
+            members.append({
+                'business_name': business_name,
+                'status': status,
+                'notes': notes
+            })
+        
+        # Create the attendance record
+        record_id = create_attendance_record(meeting_date, members)
+        
+        if record_id:
+            flash('Attendance record created successfully', 'success')
+            return redirect(url_for('attendance'))
+        else:
+            flash('Failed to create attendance record', 'error')
+            return redirect(url_for('attendance'))
+            
+    except Exception as e:
+        print(f"Error creating attendance record: {e}")
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('attendance'))
+
+@app.route('/edit_attendance/<attendance_id>', methods=['GET'])
+@login_required
+def edit_attendance(attendance_id):
+    """
+    Display form to edit an attendance record.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can edit attendance records
+    if not user or user.get('business_name') != 'Admin':
+        flash('Access denied. You must be an Admin to view this page.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Get the attendance record
+    record = get_attendance_record_by_id(attendance_id)
+    
+    if not record:
+        flash('Attendance record not found', 'error')
+        return redirect(url_for('attendance'))
+    
+    # Get all users for the form
+    all_users = get_all_enabled_users()
+    
+    return render_template(
+        'edit_attendance.html',
+        user=user,
+        record=record,
+        all_users=all_users
+    )
+
+@app.route('/update_attendance/<attendance_id>', methods=['POST'])
+@login_required
+def update_attendance(attendance_id):
+    """
+    Update an existing attendance record.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can update attendance records
+    if not user or user.get('business_name') != 'Admin':
+        flash('Access denied. You must be an Admin to perform this action.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Get form data
+        meeting_date = request.form.get('meeting_date')
+        
+        # Check if date is valid
+        if not meeting_date:
+            flash('Meeting date is required', 'error')
+            return redirect(url_for('edit_attendance', attendance_id=attendance_id))
+        
+        # Get all users and their attendance status
+        members = []
+        all_users = get_all_enabled_users()
+        
+        for user_data in all_users:
+            business_name = user_data.get('business_name')
+            business_id = str(user_data.get('_id'))
+            
+            # Get status for this user
+            status = request.form.get(f'status_{business_id}', 'absent')
+            
+            # Get notes for this user if any
+            notes = request.form.get(f'notes_{business_id}', '')
+            
+            # Debug output
+            print(f"Processing attendance for {business_name} - Status: {status}")
+            
+            # Add to members list
+            members.append({
+                'business_name': business_name,
+                'status': status,
+                'notes': notes
+            })
+        
+        # Debug output to verify data
+        print(f"Updating attendance record {attendance_id} with {len(members)} members")
+        for member in members:
+            print(f"  {member['business_name']}: {member['status']}")
+        
+        # Update the record
+        success = update_attendance_record(attendance_id, meeting_date, members)
+        
+        if success:
+            flash('Attendance record updated successfully', 'success')
+            # Force a redirect to reload all data from the database
+            return redirect(url_for('attendance', _method='GET', _cache_bust=datetime.now().timestamp()))
+        else:
+            flash('Failed to update attendance record', 'error')
+            
+        return redirect(url_for('attendance'))
+            
+    except Exception as e:
+        print(f"Error updating attendance record: {e}")
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('edit_attendance', attendance_id=attendance_id))
+
+@app.route('/delete_attendance/<attendance_id>', methods=['POST'])
+@login_required
+def delete_attendance(attendance_id):
+    """
+    Delete an attendance record.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can delete attendance records
+    if not user or user.get('business_name') != 'Admin':
+        flash('Access denied. You must be an Admin to perform this action.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    try:
+        # Delete the record
+        success = delete_attendance_record(attendance_id)
+        
+        if success:
+            flash('Attendance record deleted successfully', 'success')
+        else:
+            flash('Failed to delete attendance record', 'error')
+            
+        return redirect(url_for('attendance'))
+            
+    except Exception as e:
+        print(f"Error deleting attendance record: {e}")
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('attendance'))
+
+@app.route('/check_attendance_date', methods=['GET'])
+@login_required
+def check_attendance_date():
+    """
+    API endpoint to check if an attendance record exists for a specific date.
+    If it exists, return the record data.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can access attendance data
+    if not user or user.get('business_name') != 'Admin':
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        # Get the date from query parameters
+        date_param = request.args.get('date')
+        if not date_param:
+            return jsonify({'success': False, 'message': 'Date parameter is required'}), 400
+        
+        # Check if a record exists for this date
+        record = get_attendance_record_by_date(date_param)
+        
+        if record:
+            # Convert ObjectId to string for JSON serialization
+            record['_id'] = str(record['_id'])
+            
+            # Format other fields as needed
+            if isinstance(record.get('meeting_date'), datetime):
+                record['meeting_date'] = record['meeting_date'].strftime('%Y-%m-%d')
+            
+            # Ensure we're sending the complete data and validate member status values
+            for member in record.get('members', []):
+                # Make sure status is present and valid
+                if 'status' not in member or not member['status']:
+                    member['status'] = 'absent'  # Default if missing
+                
+                # Log each member's status for debugging
+                print(f"Member: {member.get('business_name')} - Status: {member.get('status')}")
+            
+            return jsonify({
+                'success': True,
+                'exists': True,
+                'record': record,
+                'timestamp': datetime.now().timestamp()  # Add timestamp to prevent caching
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'exists': False,
+                'timestamp': datetime.now().timestamp()  # Add timestamp to prevent caching
+            })
+            
+    except Exception as e:
+        print(f"Error checking attendance date: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5015)
