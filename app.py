@@ -223,6 +223,72 @@ def get_all_users():
         print(f"Error getting all users: {e}")
         return []
 
+def send_attendance_webhook(meeting_date, members):
+    """Send a webhook notification when a new attendance record is created."""
+    if not meeting_date or not members:
+        print("Cannot send attendance webhook: Missing required data")
+        return False
+    
+    try:
+        # Prepare data for webhook
+        webhook_data = {
+            'meeting_date': meeting_date,
+            'created_at': datetime.now().isoformat(),
+            'members': []
+        }
+        
+        # Add meeting_date to each member record
+        for member in members:
+            member_data = member.copy()  # Create a copy to avoid modifying the original
+            member_data['meeting_date'] = meeting_date
+            webhook_data['members'].append(member_data)
+        
+        # Send webhook notification
+        # url = "https://automation-contemplation.onrender.com/webhook-test/attendance_create"
+        url = "https://automation-contemplation.onrender.com/webhook/attendance_create"
+        
+        import json
+        print("\n==== ATTENDANCE WEBHOOK PAYLOAD ====")
+        payload_json = json.dumps(webhook_data, indent=2)
+        print(payload_json)
+        print("====================================\n")
+        
+        print(f"Sending attendance webhook request to: {url}")
+        
+        # Send the webhook request with timeout
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'BusinessConnectionAttendance/1.0'
+        }
+        
+        response = requests.post(
+            url,
+            json=webhook_data,
+            headers=headers,
+            timeout=10  # 10 second timeout
+        )
+        
+        print(f"Attendance webhook response status: {response.status_code}")
+        print(f"Attendance webhook response text: {response.text}")
+        
+        # Check if response is successful
+        if response.status_code >= 200 and response.status_code < 300:
+            print("Attendance webhook notification sent successfully")
+            return True
+        else:
+            print(f"Attendance webhook notification failed with status code: {response.status_code}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("Attendance webhook request timed out after 10 seconds")
+    except requests.exceptions.RequestException as e:
+        print(f"Attendance webhook request error: {e}")
+    except Exception as e:
+        print(f"Error sending attendance webhook notification: {e}")
+        print(f"Error type: {type(e).__name__}")
+        
+    return False
+
 @app.route('/')
 def index():
     # Check if user is logged in via session
@@ -1041,6 +1107,7 @@ def create_attendance():
         
         if record_id:
             flash('Attendance record created successfully', 'success')
+            send_attendance_webhook(meeting_date, members)
             return redirect(url_for('attendance', date=meeting_date))
         else:
             flash('Failed to create attendance record', 'error')
@@ -1136,6 +1203,7 @@ def update_attendance(attendance_id):
         
         if success:
             flash('Attendance record updated successfully', 'success')
+            send_attendance_webhook(meeting_date, members)
             # Force a redirect to reload all data from the database
             return redirect(url_for('attendance', date=meeting_date))
         else:
