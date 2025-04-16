@@ -289,6 +289,72 @@ def send_attendance_webhook(meeting_date, members):
         
     return False
 
+def send_attendance_change_webhook(meeting_date, business_name, status, notes):
+    """Send a webhook notification when a single attendance item is changed."""
+    if not meeting_date or not business_name:
+        print("Cannot send attendance change webhook: Missing required data")
+        return False
+    
+    try:
+        # Prepare data for webhook
+        webhook_data = {
+            'meeting_date': meeting_date,
+            'business_name': business_name,
+            'status': status,
+            'notes': notes,
+            'changed_at': datetime.now().isoformat()
+        }
+        
+        # Send webhook notification
+        # url = "https://automation-contemplation.onrender.com/webhook-test/attendance_amend"
+        url = "https://automation-contemplation.onrender.com/webhook/attendance_amend"
+        
+        import json
+        print("\n==== ATTENDANCE CHANGE WEBHOOK PAYLOAD ====")
+        payload_json = json.dumps(webhook_data, indent=2)
+        print(payload_json)
+        print("=========================================\n")
+        
+        print(f"Sending attendance change webhook request to: {url}")
+        
+        # Send the webhook request with timeout
+        headers = {
+            'Content-Type': 'application/json',
+            'User-Agent': 'BusinessConnectionAttendance/1.0'
+        }
+        
+        response = requests.post(
+            url,
+            json=webhook_data,
+            headers=headers,
+            timeout=10  # 10 second timeout
+        )
+        
+        print(f"Attendance change webhook response status: {response.status_code}")
+        print(f"Attendance change webhook response text: {response.text}")
+        print(f"Attendance change webhook response headers: {response.headers}")
+        print(f"Attendance change webhook response content: {response.content}")
+        
+        # Check if response is successful
+        if response.status_code >= 200 and response.status_code < 300:
+            print("Attendance change webhook notification sent successfully")
+            return True
+        else:
+            print(f"Attendance change webhook notification failed with status code: {response.status_code}")
+            return False
+            
+    except requests.exceptions.Timeout:
+        print("Attendance change webhook request timed out after 10 seconds")
+    except requests.exceptions.RequestException as e:
+        print(f"Attendance change webhook request error: {e}")
+    except Exception as e:
+        print(f"Error sending attendance change webhook notification: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        
+    return False
+
 @app.route('/')
 def index():
     # Check if user is logged in via session
@@ -1371,9 +1437,12 @@ def update_attendance_item():
             
             if success:
                 print(f"Successfully updated attendance record {record_id}")
+                webhook_result = send_attendance_change_webhook(meeting_date, business_name, status, notes)
+                print(f"Webhook result for {business_name} update: {webhook_result}")
                 return jsonify({
                     'success': True,
                     'message': 'Attendance updated successfully',
+                    'webhook_sent': webhook_result,
                     'timestamp': datetime.now().timestamp()
                 })
             else:
@@ -1408,10 +1477,13 @@ def update_attendance_item():
             
             if record_id:
                 print(f"Created new attendance record {record_id} for date {meeting_date}")
+                webhook_result = send_attendance_change_webhook(meeting_date, business_name, status, notes)
+                print(f"Webhook result for {business_name} update: {webhook_result}")
                 return jsonify({
                     'success': True,
                     'message': 'New attendance record created',
                     'record_id': str(record_id),
+                    'webhook_sent': webhook_result,
                     'timestamp': datetime.now().timestamp()
                 })
             else:
@@ -1422,6 +1494,60 @@ def update_attendance_item():
         import traceback
         traceback.print_exc()
         print(f"Error updating attendance item: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/test_attendance_webhook', methods=['GET'])
+@login_required
+def test_attendance_webhook():
+    """
+    A test endpoint to manually trigger the attendance webhook for testing.
+    """
+    # Get the current user
+    user_id = session.get('user_id')
+    user = get_user_by_id(user_id)
+    
+    # Only admins can test webhooks
+    if not user or user.get('business_name') != 'Admin':
+        return jsonify({'success': False, 'message': 'Access denied'}), 403
+    
+    try:
+        # Test data
+        test_date = datetime.now().strftime('%Y-%m-%d')
+        test_business = "Test Business"
+        test_status = "present"
+        test_notes = "Test webhook note"
+        
+        # Call the webhook functions
+        print("Testing attendance change webhook...")
+        change_result = send_attendance_change_webhook(test_date, test_business, test_status, test_notes)
+        
+        # Call the full attendance webhook with multiple members
+        print("Testing full attendance webhook...")
+        members = [
+            {
+                'business_name': 'Test Business 1',
+                'status': 'present',
+                'notes': 'Test note 1'
+            },
+            {
+                'business_name': 'Test Business 2',
+                'status': 'absent',
+                'notes': 'Test note 2'
+            }
+        ]
+        full_result = send_attendance_webhook(test_date, members)
+        
+        return jsonify({
+            'success': True,
+            'change_webhook_result': change_result,
+            'full_webhook_result': full_result,
+            'message': 'Webhooks tested',
+            'timestamp': datetime.now().timestamp()
+        })
+    except Exception as e:
+        import traceback
+        print(f"Error testing webhooks: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == '__main__':
