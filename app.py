@@ -1041,7 +1041,7 @@ def create_attendance():
         
         if record_id:
             flash('Attendance record created successfully', 'success')
-            return redirect(url_for('attendance'))
+            return redirect(url_for('attendance', date=meeting_date))
         else:
             flash('Failed to create attendance record', 'error')
             return redirect(url_for('attendance'))
@@ -1137,7 +1137,7 @@ def update_attendance(attendance_id):
         if success:
             flash('Attendance record updated successfully', 'success')
             # Force a redirect to reload all data from the database
-            return redirect(url_for('attendance', _method='GET', _cache_bust=datetime.now().timestamp()))
+            return redirect(url_for('attendance', date=meeting_date))
         else:
             flash('Failed to update attendance record', 'error')
             

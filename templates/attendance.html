@@ -2,6 +2,8 @@
 
 {% block content %}
 <style>
+    /* ... existing styles ... */
+    
     .attendance-actions {
         display: flex;
         gap: 10px;
@@ -340,31 +342,6 @@
         border-left-color: #ccc;
     }
     
-    .member-info {
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-    
-    .member-info h5 {
-        margin-bottom: 0;
-        margin-right: 10px;
-        flex: 1;
-    }
-    
-    .member-info small {
-        color: #666;
-        display: block;
-        width: 100%;
-        margin-top: 5px;
-    }
-    
-    .member-status {
-        display: flex;
-        align-items: center;
-    }
-    
     /* Status indicator dot */
     .status-dot {
         display: inline-block;
@@ -420,7 +397,12 @@
                         <label for="meeting_date" class="form-label">Meeting Date</label>
                         <input type="date" id="meeting_date" name="meeting_date" class="form-control" required>
                     </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end; margin-bottom: 20px;">
+                        <button type="submit" id="createAttendanceButton" class="btn btn-primary" style="display: none;">Create Attendance Record</button>
+                    </div>
                 </div>
+                
+                <div id="recordStatusMessage" class="alert mt-3" style="display: none;"></div>
                 
                 <div class="member-attendance-section">
                     <h4>Member Attendance</h4>
@@ -455,10 +437,6 @@
                         {% endfor %}
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">Create Attendance Record</button>
-                </div>
             </form>
         </div>
     </div>
@@ -485,10 +463,11 @@
                         </thead>
                         <tbody>
                             {% for record in attendance_records %}
-                                {% set present_count = record.members|selectattr('status', 'equalto', 'present')|list|length %}
-                                {% set absent_count = record.members|selectattr('status', 'equalto', 'absent')|list|length %}
-                                {% set apologies_count = record.members|selectattr('status', 'equalto', 'apologies')|list|length %}
-                                {% set late_count = record.members|selectattr('status', 'equalto', 'late')|list|length %}
+                                {% set non_admin_members = record.members|rejectattr('business_name', 'equalto', 'Admin')|list %}
+                                {% set present_count = non_admin_members|selectattr('status', 'equalto', 'present')|list|length %}
+                                {% set absent_count = non_admin_members|selectattr('status', 'equalto', 'absent')|list|length %}
+                                {% set apologies_count = non_admin_members|selectattr('status', 'equalto', 'apologies')|list|length %}
+                                {% set late_count = non_admin_members|selectattr('status', 'equalto', 'late')|list|length %}
                                 <tr>
                                     <td class="date-column">
                                         {% if record.meeting_date is string %}
@@ -501,7 +480,7 @@
                                     <td class="count-absent">{{ absent_count }}</td>
                                     <td class="count-apologies">{{ apologies_count }}</td>
                                     <td class="count-late">{{ late_count }}</td>
-                                    <td class="count-total">{{ record.members|length }}</td>
+                                    <td class="count-total">{{ non_admin_members|length }}</td>
                                     <td class="actions-column">
                                         <a href="{{ url_for('edit_attendance', attendance_id=record._id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                                         <form method="POST" action="{{ url_for('delete_attendance', attendance_id=record._id) }}" class="delete-form d-inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?');">
@@ -522,96 +501,186 @@
 </div>
 
 <script>
-    // JavaScript to handle attendance tracking
     document.addEventListener('DOMContentLoaded', function() {
+        // Get the meeting date input and buttons
         const meetingDateInput = document.getElementById('meeting_date');
-        const submitButton = document.querySelector('button[type="submit"]');
-        const allStatusSelects = document.querySelectorAll('select[name^="status_"]');
-        const allNotesInputs = document.querySelectorAll('input[name^="notes_"]');
+        const createAttendanceButton = document.getElementById('createAttendanceButton');
+        const recordStatusMessage = document.getElementById('recordStatusMessage');
         
-        console.log("Attendance page initialization started");
-        console.log(`Found ${allStatusSelects.length} status selects and ${allNotesInputs.length} notes inputs`);
-        
-        // Function to set all members to "present" by default
-        function setAllToPresent() {
-            allStatusSelects.forEach(select => {
-                select.value = 'present';
-            });
-            console.log("Set all members to Present by default");
+        // Check if there's a date in the URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateParam = urlParams.get('date');
+        if (dateParam) {
+            meetingDateInput.value = dateParam;
+            // Trigger the change event to check if this date has a record
+            meetingDateInput.dispatchEvent(new Event('change'));
         }
         
-        // Initially set all to present
-        setAllToPresent();
+        // Initialize all status selects with "present" value and style
+        document.querySelectorAll('select[name^="status_"]').forEach(select => {
+            select.value = 'present';
+            updateStatusStyle(select);
+            
+            // Add change event listener
+            select.addEventListener('change', function() {
+                updateStatusStyle(this);
+                
+                // Get the business name from the parent member-item
+                const memberItem = this.closest('.member-item');
+                const businessName = memberItem.querySelector('h5').textContent.trim();
+                const notesInput = memberItem.querySelector('input[type="text"]');
+                
+                // Save the status change
+                saveAttendanceItem(businessName, this.value, notesInput.value, this);
+            });
+        });
+        
+        // Initialize all status dots as present by default
+        document.querySelectorAll('.status-dot').forEach(dot => {
+            dot.classList.add('present');
+        });
+        
+        // Add listeners to notes inputs
+        document.querySelectorAll('input[name^="notes_"]').forEach(input => {
+            input.addEventListener('change', function() {
+                const memberItem = this.closest('.member-item');
+                const businessName = memberItem.querySelector('h5').textContent.trim();
+                const statusSelect = memberItem.querySelector('select');
+                
+                saveAttendanceItem(businessName, statusSelect.value, this.value, this);
+            });
+        });
+        
+        // Check for existing record when date changes
+        meetingDateInput.addEventListener('change', function() {
+            if (this.value) {
+                checkExistingRecord(this.value);
+            } else {
+                // Hide button and message if no date is selected
+                createAttendanceButton.style.display = 'none';
+                recordStatusMessage.style.display = 'none';
+            }
+        });
         
         // Function to check if record exists for a date
         async function checkExistingRecord(date) {
             try {
-                console.log(`Checking for existing record on date: ${date}`);
-                const response = await fetch(`/check_attendance_date?date=${date}&t=${new Date().getTime()}`);
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/check_attendance_date?date=${date}&t=${timestamp}`);
                 const data = await response.json();
-                console.log("Received record data:", data);
+                
+                if (data.success) {
+                    if (data.exists) {
+                        // Record exists - hide button and show message
+                        createAttendanceButton.style.display = 'none';
+                        recordStatusMessage.textContent = 'An attendance record already exists for this date. Changes to status and notes are saved automatically.';
+                        recordStatusMessage.style.display = 'block';
+                        recordStatusMessage.className = 'alert alert-info mt-3';
+                        
+                        // Update member data with existing values
+                        updateMembersFromRecord(data.record);
+                    } else {
+                        // No record exists - show button and update message
+                        createAttendanceButton.style.display = 'block';
+                        recordStatusMessage.textContent = 'No attendance record exists for this date. Click the button to create one.';
+                        recordStatusMessage.style.display = 'block';
+                        recordStatusMessage.className = 'alert alert-warning mt-3';
+                        
+                        // Set all statuses to present by default for new record
+                        resetAllStatusesToPresent();
+                    }
+                } else {
+                    // Error checking record
+                    createAttendanceButton.style.display = 'none';
+                    recordStatusMessage.textContent = 'Error checking attendance record. Please try again.';
+                    recordStatusMessage.style.display = 'block';
+                    recordStatusMessage.className = 'alert alert-danger mt-3';
+                }
+                
                 return data;
             } catch (error) {
                 console.error("Error checking attendance record:", error);
-                return { success: false };
+                createAttendanceButton.style.display = 'none';
+                recordStatusMessage.textContent = 'Error checking attendance record. Please try again.';
+                recordStatusMessage.style.display = 'block';
+                recordStatusMessage.className = 'alert alert-danger mt-3';
+                return { success: false, error: error.message };
             }
         }
         
-        // Function to load existing data
-        function loadExistingData(data) {
-            if (!data.success || !data.exists || !data.record || !data.record.members) {
-                console.log("No valid record data to load");
-                return;
-            }
+        // Function to update member data from existing record
+        function updateMembersFromRecord(record) {
+            if (!record || !record.members) return;
             
-            console.log(`Loading data for ${data.record.members.length} members`);
-            
-            // Create a map for quick lookup
+            // Create a lookup map for efficiency
             const memberMap = {};
-            data.record.members.forEach(member => {
+            record.members.forEach(member => {
                 memberMap[member.business_name] = member;
             });
             
-            // Find all member sections
-            const memberSections = document.querySelectorAll('.member-item');
-            
-            // Process each member section
-            memberSections.forEach(section => {
-                const businessNameEl = section.querySelector('h5');
+            // Update each member's status and notes
+            document.querySelectorAll('.member-item').forEach(memberItem => {
+                const businessNameEl = memberItem.querySelector('h5');
                 if (!businessNameEl) return;
                 
                 const businessName = businessNameEl.textContent.trim();
                 const memberData = memberMap[businessName];
                 
-                if (!memberData) {
-                    console.log(`No data found for ${businessName}`);
-                    return;
-                }
+                if (!memberData) return;
                 
-                // Update status dropdown
-                const statusSelect = section.querySelector('select[name^="status_"]');
+                // Update status
+                const statusSelect = memberItem.querySelector('select[name^="status_"]');
                 if (statusSelect && memberData.status) {
                     statusSelect.value = memberData.status;
-                    console.log(`Set ${businessName} status to ${memberData.status}`);
+                    updateStatusStyle(statusSelect);
                 }
                 
                 // Update notes
-                const notesInput = section.querySelector('input[name^="notes_"]');
-                if (notesInput && memberData.notes) {
-                    notesInput.value = memberData.notes;
-                    console.log(`Set ${businessName} notes to: ${memberData.notes}`);
+                const notesInput = memberItem.querySelector('input[name^="notes_"]');
+                if (notesInput) {
+                    notesInput.value = memberData.notes || '';
                 }
             });
+        }
+        
+        // Reset all statuses to present
+        function resetAllStatusesToPresent() {
+            document.querySelectorAll('select[name^="status_"]').forEach(select => {
+                select.value = 'present';
+                updateStatusStyle(select);
+            });
             
-            // Remove the submit button if record exists
-            if (submitButton) {
-                const formGroup = submitButton.parentElement;
-                formGroup.innerHTML = '<div class="alert alert-info mt-3">This attendance record already exists. Changes to status and notes are saved automatically.</div>';
-                console.log("Removed submit button since record exists");
+            // Clear all notes
+            document.querySelectorAll('input[name^="notes_"]').forEach(input => {
+                input.value = '';
+            });
+        }
+        
+        // Function to update status styling
+        function updateStatusStyle(select) {
+            const status = select.value;
+            select.setAttribute('data-value', status);
+            
+            // Update member-item styling
+            const memberItem = select.closest('.member-item');
+            if (memberItem) {
+                // Border color
+                memberItem.style.borderLeftColor = '';
+                if (status === 'present') memberItem.style.borderLeftColor = '#28a745';
+                if (status === 'absent') memberItem.style.borderLeftColor = '#dc3545';
+                if (status === 'apologies') memberItem.style.borderLeftColor = '#ffc107';
+                if (status === 'late') memberItem.style.borderLeftColor = '#17a2b8';
+                
+                // Status dot
+                const statusDot = memberItem.querySelector('.status-dot');
+                if (statusDot) {
+                    statusDot.className = 'status-dot';
+                    statusDot.classList.add(status);
+                }
             }
         }
         
-        // Function to save changes in real-time
+        // Function to save attendance item
         async function saveAttendanceItem(businessName, status, notes, element) {
             if (!meetingDateInput.value) {
                 console.error("No meeting date selected!");
@@ -625,13 +694,9 @@
             element.parentNode.appendChild(indicator);
             
             try {
-                console.log(`Saving ${businessName}: status=${status}, notes=${notes}`);
-                
-                // Get the CSRF token from the hidden input
+                // Get the CSRF token
                 const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-                console.log("Using CSRF token:", csrfToken);
                 
-                // Create request data
                 const requestData = {
                     meeting_date: meetingDateInput.value,
                     business_name: businessName,
@@ -639,8 +704,6 @@
                     notes: notes,
                     csrf_token: csrfToken
                 };
-                
-                console.log("Sending data:", JSON.stringify(requestData));
                 
                 const response = await fetch('/update_attendance_item', {
                     method: 'POST',
@@ -652,9 +715,7 @@
                     body: JSON.stringify(requestData)
                 });
                 
-                console.log("Fetch response status:", response.status);
                 const result = await response.json();
-                console.log("Save result:", result);
                 
                 // Update the indicator based on result
                 if (result.success) {
@@ -664,34 +725,6 @@
                             indicator.parentNode.removeChild(indicator);
                         }
                     }, 2000);
-                    
-                    // Try to update the table row if it exists
-                    const tableRows = document.querySelectorAll('table tbody tr');
-                    tableRows.forEach(row => {
-                        const dateCell = row.querySelector('td:first-child');
-                        if (dateCell && dateCell.textContent.includes(meetingDateInput.value)) {
-                            console.log("Updating table row for this date");
-                            // Refresh the row data
-                            checkExistingRecord(meetingDateInput.value).then(data => {
-                                if (data.success && data.exists) {
-                                    const members = data.record.members || [];
-                                    const presentCount = members.filter(m => m.status === 'present').length;
-                                    const absentCount = members.filter(m => m.status === 'absent').length;
-                                    const apologiesCount = members.filter(m => m.status === 'apologies').length;
-                                    const lateCount = members.filter(m => m.status === 'late').length;
-                                    
-                                    const cells = row.querySelectorAll('td');
-                                    if (cells.length >= 6) {
-                                        cells[1].textContent = presentCount;
-                                        cells[2].textContent = absentCount;
-                                        cells[3].textContent = apologiesCount; 
-                                        cells[4].textContent = lateCount;
-                                        cells[5].textContent = members.length;
-                                    }
-                                }
-                            });
-                        }
-                    });
                 } else {
                     indicator.textContent = "❌";
                     indicator.style.color = "red";
@@ -700,10 +733,9 @@
                             indicator.parentNode.removeChild(indicator);
                         }
                     }, 2000);
-                    console.error("Error saving attendance:", result.message);
                 }
             } catch (error) {
-                console.error("Error saving attendance:", error);
+                console.error("Error saving attendance item:", error);
                 indicator.textContent = "❌";
                 indicator.style.color = "red";
                 setTimeout(() => {
@@ -714,155 +746,9 @@
             }
         }
         
-        // Function to update the status select styling
-        function updateStatusStyle(select) {
-            // Remove previous styling
-            select.removeAttribute('data-value');
-            select.style.backgroundColor = '';
-            select.style.color = '';
-            select.style.borderColor = '';
-            
-            // Get the current value
-            const status = select.value;
-            
-            // Set data attribute for CSS targeting
-            select.setAttribute('data-value', status);
-            
-            // Apply inline styles for immediate effect
-            if (status === 'present') {
-                select.style.backgroundColor = '#d4edda';
-                select.style.color = '#155724';
-                select.style.borderColor = '#c3e6cb';
-            } else if (status === 'absent') {
-                select.style.backgroundColor = '#f8d7da';
-                select.style.color = '#721c24';
-                select.style.borderColor = '#f5c6cb';
-            } else if (status === 'apologies') {
-                select.style.backgroundColor = '#fff3cd';
-                select.style.color = '#856404';
-                select.style.borderColor = '#ffeeba';
-            } else if (status === 'late') {
-                select.style.backgroundColor = '#d1ecf1';
-                select.style.color = '#0c5460';
-                select.style.borderColor = '#bee5eb';
-            }
-            
-            // Update the status dot in the member card
-            const memberItem = select.closest('.member-item');
-            if (memberItem) {
-                const statusDot = memberItem.querySelector('.status-dot');
-                if (statusDot) {
-                    // Remove all status classes
-                    statusDot.classList.remove('present', 'absent', 'apologies', 'late');
-                    // Add the current status class
-                    statusDot.classList.add(status);
-                    
-                    // Also update the entire member card border color subtly
-                    memberItem.style.borderLeftWidth = '5px';
-                    
-                    if (status === 'present') {
-                        memberItem.style.borderLeftColor = '#28a745';
-                    } else if (status === 'absent') {
-                        memberItem.style.borderLeftColor = '#dc3545';
-                    } else if (status === 'apologies') {
-                        memberItem.style.borderLeftColor = '#ffc107';
-                    } else if (status === 'late') {
-                        memberItem.style.borderLeftColor = '#17a2b8';
-                    }
-                }
-            }
-        }
-        
-        // Function to setup event listeners
-        function setupEventListeners() {
-            // Process each member section
-            const memberSections = document.querySelectorAll('.member-item');
-            
-            memberSections.forEach(section => {
-                const businessNameEl = section.querySelector('h5');
-                if (!businessNameEl) return;
-                
-                const businessName = businessNameEl.textContent.trim();
-                const statusSelect = section.querySelector('select[name^="status_"]');
-                const notesInput = section.querySelector('input[name^="notes_"]');
-                
-                // Initialize the status style
-                if (statusSelect) {
-                    updateStatusStyle(statusSelect);
-                
-                    // Add event listener to status select
-                    statusSelect.addEventListener('change', function() {
-                        const currentStatus = this.value;
-                        const currentNotes = notesInput ? notesInput.value : '';
-                        
-                        // Update the styling
-                        updateStatusStyle(this);
-                        
-                        console.log(`Status changed for ${businessName} to ${currentStatus}`);
-                        saveAttendanceItem(businessName, currentStatus, currentNotes, this);
-                    });
-                }
-                
-                // Add event listener to notes input with debounce
-                if (notesInput) {
-                    let timeout = null;
-                    notesInput.addEventListener('input', function() {
-                        clearTimeout(timeout);
-                        
-                        timeout = setTimeout(() => {
-                            const currentNotes = this.value;
-                            const currentStatus = statusSelect ? statusSelect.value : 'present';
-                            console.log(`Notes changed for ${businessName} to: ${currentNotes}`);
-                            saveAttendanceItem(businessName, currentStatus, currentNotes, this);
-                        }, 500); // 500ms debounce
-                    });
-                }
-            });
-        }
-        
-        // Handle date selection
-        meetingDateInput.addEventListener('change', async function() {
-            const selectedDate = this.value;
-            console.log(`Date selected: ${selectedDate}`);
-            
-            if (!selectedDate) return;
-            
-            // Reset form state
-            if (submitButton) {
-                submitButton.style.display = 'block';
-                const formGroup = submitButton.parentElement;
-                const infoMessage = formGroup.querySelector('.alert');
-                if (infoMessage) {
-                    formGroup.removeChild(infoMessage);
-                }
-            }
-            
-            // Set defaults for new record
-            setAllToPresent();
-            
-            // Check if record exists
-            const data = await checkExistingRecord(selectedDate);
-            
-            if (data.success) {
-                if (data.exists) {
-                    console.log("Found existing record, loading data...");
-                    loadExistingData(data);
-                } else {
-                    console.log("No existing record found, using defaults");
-                }
-            }
-            
-            // Setup event listeners
-            setupEventListeners();
-        });
-        
-        // Initialize
+        // Check if meeting date is already set (e.g., when returning to page)
         if (meetingDateInput.value) {
-            console.log("Initial date is set, checking for record...");
-            meetingDateInput.dispatchEvent(new Event('change'));
-        } else {
-            console.log("No initial date set, setting up listeners only");
-            setupEventListeners();
+            checkExistingRecord(meetingDateInput.value);
         }
     });
 </script>
