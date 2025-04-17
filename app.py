@@ -355,6 +355,137 @@ def send_attendance_change_webhook(meeting_date, business_name, status, notes):
         
     return False
 
+def send_welcome_webhook(user_data):
+    """Send a webhook notification for a new user registration."""
+    if not user_data:
+        print("Cannot send webhook notification: User data is None")
+        return False
+    
+    # Create a more user-friendly format instead of raw MongoDB document
+    friendly_user = {
+        "name": {
+            "first": user_data.get('first_name', ''),
+            "last": user_data.get('last_name', ''),
+            "full": f"{user_data.get('first_name', '')} {user_data.get('last_name', '')}".strip()
+        },
+        "business": user_data.get('business_name', ''),
+        "contact": {
+            "email": user_data.get('email', ''),
+            "mobile": user_data.get('mobile_number', ''),
+            "office": user_data.get('office_number', '')
+        },
+        "account": {
+            "enabled": user_data.get('enabled', False),
+            "notifications": user_data.get('notify', False),
+            "created": datetime.now().isoformat()
+        }
+    }
+    
+    # Send webhook notification
+    url = "https://automation-contemplation.onrender.com/webhook/welcome_new_user"
+    try:
+        import json
+        import os
+        from pathlib import Path
+        
+        print("\n==== WELCOME WEBHOOK PAYLOAD ====")
+        payload_json = json.dumps(friendly_user, indent=2)
+        print(payload_json)
+        print("=================================\n")
+        
+        # Prepare file paths
+        static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+        app_instructions_path = os.path.join(static_dir, 'App_Instructions.pdf')
+        welcome_pack_path = os.path.join(static_dir, 'Welcome_pack.pdf')  # Fixing the typo in the filename
+        
+        # Check if files exist
+        if not os.path.exists(app_instructions_path):
+            print(f"Warning: App_Instructions.pdf not found at {app_instructions_path}")
+        if not os.path.exists(welcome_pack_path):
+            print(f"Warning: Welcome_pack.pdf not found at {welcome_pack_path}")
+        
+        # Prepare multipart form data
+        files = {}
+        if os.path.exists(app_instructions_path):
+            files['App_Instructions.pdf'] = (
+                'App_Instructions.pdf',
+                open(app_instructions_path, 'rb'),
+                'application/pdf'
+            )
+        if os.path.exists(welcome_pack_path):
+            files['Welcome_pack.pdf'] = (
+                'Welcome_pack.pdf',
+                open(welcome_pack_path, 'rb'),
+                'application/pdf'
+            )
+        
+        # Add timeout to prevent hanging
+        print(f"Sending welcome webhook request to: {url}")
+        
+        # Prepare the user data as part of the form
+        data = {
+            'user_data': json.dumps(friendly_user)
+        }
+        
+        # Send the webhook request with timeout
+        headers = {
+            'User-Agent': 'BusinessConnectionReferral/1.0'
+        }
+        
+        response = requests.post(
+            url, 
+            data=data,
+            files=files,
+            headers=headers,
+            timeout=10  # 10 second timeout
+        )
+        
+        # Close file handles
+        for file_tuple in files.values():
+            if len(file_tuple) > 1 and hasattr(file_tuple[1], 'close'):
+                file_tuple[1].close()
+        
+        print(f"Welcome webhook response status: {response.status_code}")
+        print(f"Welcome webhook response headers: {response.headers}")
+        print(f"Welcome webhook response text: {response.text}")
+        
+        # Check if response is successful
+        if response.status_code >= 200 and response.status_code < 300:
+            print("Welcome webhook notification sent successfully")
+            return True
+        else:
+            print(f"Welcome webhook notification failed with status code: {response.status_code}")
+            # Try to provide more detailed error information
+            try:
+                error_data = response.json()
+                print(f"Error details: {json.dumps(error_data, indent=2)}")
+            except:
+                print(f"Response content: {response.text[:500]}")  # Limit to first 500 chars in case of large response
+            
+            # Log the error to the console for debugging
+            print(f"Full webhook payload that caused the error: {json.dumps(friendly_user, indent=2)}")
+            return False
+    except requests.exceptions.Timeout:
+        print("Welcome webhook request timed out after 10 seconds")
+    except requests.exceptions.RequestException as e:
+        print(f"Welcome webhook request error: {e}")
+    except Exception as e:
+        print(f"Error sending welcome webhook notification: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        
+        # Close file handles if exception occurs
+        if 'files' in locals() and isinstance(files, dict):
+            for file_tuple in files.values():
+                if len(file_tuple) > 1 and hasattr(file_tuple[1], 'close'):
+                    try:
+                        file_tuple[1].close()
+                    except:
+                        pass
+    
+    return False
+
 @app.route('/')
 def index():
     # Check if user is logged in via session
@@ -463,6 +594,7 @@ def register():
         
         if user_id:
             flash('User registration successful!', 'success')
+            send_welcome_webhook(get_user_by_id(user_id))
             return redirect(url_for('admin_dashboard'))
         else:
             flash('Registration failed. Please try again.', 'error')
@@ -532,7 +664,6 @@ def dashboard():
         
         print(f"  - is_accepted: {is_accepted}, is_pending: {is_pending}")
         
-        # Only show referrals that are accepted and pending on the dashboard
         if is_accepted and is_pending:
             print(f"  - ADDING TO ACTIVE SENT REFERRALS LIST")
             
