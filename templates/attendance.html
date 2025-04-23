@@ -424,7 +424,7 @@
                                             <option value="present">Present</option>
                                             <option value="absent">Absent</option>
                                             <option value="apologies">Apologies</option>
-                                            <option value="late">Late</option>
+                                            <!-- <option value="late">Late</option> -->
                                         </select>
                                     </div>
                                     
@@ -456,7 +456,7 @@
                                 <th>Present</th>
                                 <th>Absent</th>
                                 <th>Apologies</th>
-                                <th>Late</th>
+                                <!-- <th>Late</th> -->
                                 <th>Total</th>
                                 <th class="actions-column">Actions</th>
                             </tr>
@@ -479,10 +479,10 @@
                                     <td class="count-present">{{ present_count }}</td>
                                     <td class="count-absent">{{ absent_count }}</td>
                                     <td class="count-apologies">{{ apologies_count }}</td>
-                                    <td class="count-late">{{ late_count }}</td>
+                                    <!-- <td class="count-late">{{ late_count }}</td> -->
                                     <td class="count-total">{{ non_admin_members|length }}</td>
                                     <td class="actions-column">
-                                        <a href="{{ url_for('edit_attendance', attendance_id=record._id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <!-- <a href="{{ url_for('edit_attendance', attendance_id=record._id) }}" class="btn btn-sm btn-outline-primary">Edit</a> -->
                                         <form method="POST" action="{{ url_for('delete_attendance', attendance_id=record._id) }}" class="delete-form d-inline" onsubmit="return confirm('Are you sure you want to delete this attendance record?');">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
@@ -669,7 +669,7 @@
                 if (status === 'present') memberItem.style.borderLeftColor = '#28a745';
                 if (status === 'absent') memberItem.style.borderLeftColor = '#dc3545';
                 if (status === 'apologies') memberItem.style.borderLeftColor = '#ffc107';
-                if (status === 'late') memberItem.style.borderLeftColor = '#17a2b8';
+                //if (status === 'late') memberItem.style.borderLeftColor = '#17a2b8';
                 
                 // Status dot
                 const statusDot = memberItem.querySelector('.status-dot');
