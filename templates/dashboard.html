@@ -683,7 +683,7 @@
                             
                             <div class="form-group">
                                 <label for="contact_info">Contact Information</label>
-                                {{ referral_form.contact_info(class="form-control", placeholder="Enter email or phone number") }}
+                                {{ referral_form.contact_info(class="form-control", placeholder="Enter email or phone number ### ### ####") }}
                                 {% if referral_form.contact_info.errors %}
                                     {% for error in referral_form.contact_info.errors %}
                                         <div class="error-message">{{ error }}</div>
